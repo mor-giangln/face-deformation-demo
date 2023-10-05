@@ -1,24 +1,35 @@
-import React from 'react';
-import logo from './logo.svg';
+import type { TabsProps } from 'antd';
+import { Tabs } from 'antd';
+import * as THREE from 'three';
 import './App.css';
+import CubeDemo from './CubeDemo';
+
+const onChange = (key: string) => {
+};
+
+const items: TabsProps['items'] = [
+  {
+    key: '1',
+    label: 'Cube',
+    children: <CubeDemo />,
+  },
+  {
+    key: '2',
+    label: 'Drawing line',
+    children: 'Content of Tab Pane 2',
+  },
+  {
+    key: '3',
+    label: 'Tab 3',
+    children: 'Content of Tab Pane 3',
+  },
+];
 
 function App() {
+
   return (
     <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+      <Tabs defaultActiveKey="1" items={items} onChange={onChange} />
     </div>
   );
 }
