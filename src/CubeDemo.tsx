@@ -1,12 +1,15 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
-
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 
 const DemoScene: React.FC = () => {
     const sceneRef = useRef<HTMLDivElement>(null);
 
     // Create scene
     const scene: THREE.Scene = new THREE.Scene();
+    scene.background = new THREE.Color('darkgray');
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+    scene.add(ambientLight);
 
     // Create camera
     const camera: THREE.PerspectiveCamera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
@@ -18,9 +21,10 @@ const DemoScene: React.FC = () => {
 
     // Add a cube for testing
     const geometry: THREE.BoxGeometry = new THREE.BoxGeometry(1, 1, 1);
-    const material: THREE.MeshBasicMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+    const material: THREE.MeshBasicMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00, wireframe: true });
     const cube: THREE.Mesh = new THREE.Mesh(geometry, material);
     scene.add(cube);
+    new OrbitControls(camera, renderer.domElement)
 
     useEffect(() => {
         sceneRef.current?.appendChild(renderer.domElement);
@@ -57,7 +61,7 @@ const DemoScene: React.FC = () => {
         animate();
     }, [])
 
-    return <div ref={sceneRef}></div>
+    return <div ref={sceneRef} />
 }
 
 export default DemoScene;

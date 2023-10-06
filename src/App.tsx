@@ -1,8 +1,11 @@
 import type { TabsProps } from 'antd';
-import { Tabs } from 'antd';
-import * as THREE from 'three';
+import { Image, Tabs } from 'antd';
 import './App.css';
 import CubeDemo from './CubeDemo';
+import LoadModel from './LoadModel';
+import SphereDemo from './SphereDemo';
+import Angelica from './Angelica';
+import { Suspense } from 'react';
 
 const onChange = (key: string) => {
 };
@@ -15,13 +18,13 @@ const items: TabsProps['items'] = [
   },
   {
     key: '2',
-    label: 'Drawing line',
-    children: 'Content of Tab Pane 2',
+    label: 'Sphere',
+    children: <SphereDemo />,
   },
   {
     key: '3',
-    label: 'Tab 3',
-    children: 'Content of Tab Pane 3',
+    label: 'Load Model',
+    children: <LoadModel />,
   },
 ];
 
@@ -29,7 +32,8 @@ function App() {
 
   return (
     <div className="App">
-      <Tabs defaultActiveKey="1" items={items} onChange={onChange} />
+      <h2>Three JS Demo</h2>
+      <Tabs defaultActiveKey="3" items={items} onChange={onChange} />
     </div>
   );
 }

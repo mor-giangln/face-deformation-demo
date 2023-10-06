@@ -25,10 +25,17 @@
       work correctly both with client-side routing and a non-root public URL.
       Learn how to configure a non-root public URL by running `npm run build`.
     -->
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://unpkg.com/three@<0.129.0>/build/three.module.js",
+          "three/addons/": "https://unpkg.com/three@<0.129.0>/examples/jsm/"
+        }
+      }
+    </script>
     <title>Face Deformation Demo</title>
   </head>
   <body>
-    <script src="threejs/OrbitControls.js"></script>
     <noscript>You need to enable JavaScript to run this app.</noscript>
     <div id="root"></div>
     <!--
