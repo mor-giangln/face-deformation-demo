@@ -32,7 +32,9 @@ const LoadModel: React.FC = () => {
     scene.add(ambientLight);
     scene.add(topLight);
 
-    new OrbitControls(camera, renderer.domElement)
+    new OrbitControls(camera, renderer.domElement);
+    const axesHelper = new THREE.AxesHelper(200);
+    scene.add(axesHelper);
 
     // Load a 3D model (GLTF)
     const loader = new GLTFLoader();

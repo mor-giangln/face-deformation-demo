@@ -35,7 +35,6 @@ const DemoScene: React.FC = () => {
     });
     const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
     let step = 0;
-    let speed = 0.01;
     sphere.position.set(-10, 10, 0);
     scene.add(sphere);
 
