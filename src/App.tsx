@@ -16,16 +16,16 @@ const items: TabsProps['items'] = [
     label: 'Cube',
     children: <CubeDemo />,
   },
-  {
-    key: '2',
-    label: 'Sphere',
-    children: <SphereDemo />,
-  },
-  {
-    key: '3',
-    label: 'Load Model',
-    children: <LoadModel />,
-  },
+  // {
+  //   key: '2',
+  //   label: 'Sphere',
+  //   children: <SphereDemo />,
+  // },
+  // {
+  //   key: '3',
+  //   label: 'Load Model',
+  //   children: <LoadModel />,
+  // },
 ];
 
 function App() {
@@ -33,7 +33,7 @@ function App() {
   return (
     <div className="App">
       <h2>Three JS Demo</h2>
-      <Tabs defaultActiveKey="3" items={items} onChange={onChange} />
+      <Tabs defaultActiveKey="1" items={items} onChange={onChange} />
     </div>
   );
 }
