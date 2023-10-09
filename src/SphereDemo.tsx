@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 
@@ -18,11 +18,18 @@ const SphereDemo: React.FC = () => {
     renderer.setSize(window.innerWidth, window.innerHeight);
 
     // Add a cube for testing
-    const geometry: THREE.SphereGeometry = new THREE.SphereGeometry(1, 8, 5);
+    const geometry: THREE.SphereGeometry = new THREE.SphereGeometry(1, 10, 5);
     const material: THREE.MeshBasicMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00, wireframe: true });
     const sphere: THREE.Mesh = new THREE.Mesh(geometry, material);
     scene.add(sphere);
-    new OrbitControls(camera, renderer.domElement)
+    new OrbitControls(camera, renderer.domElement);
+
+
+    function makeLatticeObject() {
+        const bbox = new THREE.Box3().setFromObject(sphere);
+        const latticeMesh = new THREE.Mesh(geometry, material)
+    }
+
 
     useEffect(() => {
         sceneRef.current?.appendChild(renderer.domElement);
@@ -50,8 +57,8 @@ const SphereDemo: React.FC = () => {
         const animate = () => {
             requestAnimationFrame(animate);
             // Auto rotate
-            sphere.rotation.x += 0.01;
-            sphere.rotation.y += 0.01;
+            // sphere.rotation.x += 0.01;
+            // sphere.rotation.y += 0.01;
 
             renderer.render(scene, camera);
         }

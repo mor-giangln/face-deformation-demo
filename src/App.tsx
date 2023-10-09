@@ -3,7 +3,6 @@ import { Tabs } from 'antd';
 import './App.css';
 import CubeDemo from './CubeDemo';
 import LoadModel from './LoadModel';
-import SphereDemo from './SphereDemo';
 
 const onChange = (key: string) => {
 };
@@ -13,11 +12,6 @@ const items: TabsProps['items'] = [
     key: '1',
     label: 'Cube',
     children: <CubeDemo />,
-  },
-  {
-    key: '2',
-    label: 'Sphere',
-    children: <SphereDemo />,
   },
   {
     key: '3',
@@ -31,7 +25,7 @@ function App() {
   return (
     <div className="App">
       <h2>Three JS Demo</h2>
-      <Tabs defaultActiveKey="1" items={items} onChange={onChange} />
+      <Tabs defaultActiveKey="3" items={items} onChange={onChange} />
     </div>
   );
 }
