@@ -39,7 +39,7 @@ const DemoScene = () => {
         // [Sphere]
         const sphere = new THREE.Mesh(
             new THREE.SphereGeometry(4, 15, 10),
-            new THREE.MeshLambertMaterial({
+            new THREE.MeshBasicMaterial({
                 color: 0x0000FF,
                 wireframe: false
             }));
@@ -69,11 +69,38 @@ const DemoScene = () => {
         transformControls.addEventListener('dragging-changed', function (event) {
             controls.enabled = !event.value;
         });
+        var raycaster = new THREE.Raycaster();
+        var mouse = new THREE.Vector2();
+        window.addEventListener('mousemove', onMouseMove, false);
+
+        function onMouseMove(event: any) {
+            // Calculate mouse coordinates in normalized device coordinates
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+        
+            // Update the picking ray with the camera and mouse position
+            raycaster.setFromCamera(mouse, camera);
+        
+            // Check for intersections with the cube
+            var intersects = raycaster.intersectObjects([cube]);
+        
+            // Change cube color if mouse is over it
+            if (intersects.length > 0) {
+                // cube.material.color.set(0xff0000); // Change color on hover
+                if(sceneRef.current){
+                    sceneRef.current.style.cursor = 'pointer'
+                }
+            } else {
+                // cube.material.color.set(0x00ff00); // Restore original color
+            }
+        }
+
 
         const axesHelper = new THREE.AxesHelper(20);
         scene.add(axesHelper);
         const gridHelper = new THREE.GridHelper(30);
         scene.add(gridHelper);
+
 
         const sphereOptions = {
             sphereColor: 0x0000FF,
