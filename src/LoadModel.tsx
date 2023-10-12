@@ -77,7 +77,7 @@ const LoadModel = () => {
         loader.load(`./assets/${modelToRender}/face.glb`, (gltf) => {
             const loadedModel = gltf.scene;
             modelRef.current = loadedModel;
-            // transformControls.attach(loadedModel);
+            transformControls.attach(loadedModel);
             scene.add(loadedModel);
         }, undefined, (error) => {
             console.log('error', error)
@@ -88,6 +88,9 @@ const LoadModel = () => {
         const ctrl_pt_meshes: THREE.Mesh[] = [];
 
         const mTotalCtrlPtCount: THREE.Vector3[] = [];
+        const latticeVertices: any[] = [];
+
+        // [FFD - Control Points]
         landmarks.landmarks.map((landmark) => {
             const ctrlPoint = landmark.worldPt;
             return mTotalCtrlPtCount.push(new THREE.Vector3(ctrlPoint[0], ctrlPoint[1], ctrlPoint[2]));
@@ -100,10 +103,78 @@ const LoadModel = () => {
             ctrl_pt_meshes.push(ctrl_pt_mesh);
             scene.add(ctrl_pt_mesh);
         }
-        const lattice_line_material = new THREE.LineBasicMaterial({ color: 0x4d4dff });
-        const lattice_line_geom = new THREE.SphereGeometry(1, 1, 1, 1, 1, 1).setFromPoints(mTotalCtrlPtCount);
-        const line = new THREE.Line(lattice_line_geom, lattice_line_material);
-        scene.add(line);
+
+
+        const segments = 1;
+        function createLatticePoints(controlPoints: THREE.Vector3[], segments: number): THREE.Vector3[] {
+            let latticePoints: THREE.Vector3[] = [];
+
+
+            for (let i = 0; i <= segments; i++) {
+
+                let t = i / segments;
+                let point = new THREE.Vector3();
+
+                point.x = bezierInterpolate(controlPoints.map(p => p.x), t);
+                point.y = bezierInterpolate(controlPoints.map(p => p.y), t);
+                point.z = bezierInterpolate(controlPoints.map(p => p.z), t);
+
+                latticePoints.push(point);
+
+            }
+
+            return latticePoints;
+        }
+
+        function bezierInterpolate(points: number[], t: number): number {
+            const n = points.length - 1;
+            let result = 0;
+
+            for (let i = 0; i <= n; i++) {
+                result += binomialCoefficient(n, i) * Math.pow(1 - t, n - i) * Math.pow(t, i) * points[i];
+            }
+
+            return result;
+        };
+
+        function binomialCoefficient(n: number, k: number): number {
+            if (k === 0 || k === n) return 1;
+            return binomialCoefficient(n - 1, k - 1) + binomialCoefficient(n - 1, k);
+        }
+        // const latticePoints: THREE.Vector3[] = createLatticePoints(mTotalCtrlPtCount, segments);
+        // const lattice_line_geom: THREE.BufferGeometry = new THREE.BufferGeometry();
+        // const positions = new Float32Array(latticePoints.length * 3);
+        // for (let i = 0; i < latticePoints.length; i++) {
+        //     positions[i * 3] = latticePoints[i].x;
+        //     positions[i * 3 + 1] = latticePoints[i].y;
+        //     positions[i * 3 + 1] = latticePoints[i].z;
+        // }
+
+        // lattice_line_geom.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        // const lattice_line_material = new THREE.LineBasicMaterial({ color: 0x4d4dff });
+        // const lattice = new THREE.LineSegments(lattice_line_geom, lattice_line_material);
+        // scene.add(lattice);
+
+
+
+        // example
+        // Create buffer geometry for the lines
+        // var geometryAB = new THREE.BufferGeometry();
+        // geometryAB.setFromPoints([A.position, B.position]);
+        // var lineAB = new THREE.Line(geometryAB, lineMaterial);
+        // scene.add(lineAB);
+
+        // var geometryBC = new THREE.BufferGeometry();
+        // geometryBC.setFromPoints([B.position, C.position]);
+        // var lineBC = new THREE.Line(geometryBC, lineMaterial);
+        // scene.add(lineBC);
+        const lineMaterial = new THREE.LineBasicMaterial(({ color: 0x0000ff }))
+        const geometryhihi = new THREE.BufferGeometry();
+        geometryhihi.setFromPoints(mTotalCtrlPtCount);
+        const lineAB = new THREE.Line(geometryhihi, lineMaterial);
+        scene.add(lineAB);
+
+
 
         function onDocumentMouseMove(event: any) {
             event.preventDefault();
