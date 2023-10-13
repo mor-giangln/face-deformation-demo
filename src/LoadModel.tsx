@@ -1,9 +1,9 @@
 import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
+import { TransformControls } from 'three/examples/jsm/controls/TransformControls';
+import Stats from 'three/examples/jsm/libs/stats.module';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
-import Stats from 'three/examples/jsm/libs/stats.module'
-import { TransformControls } from 'three/examples/jsm/controls/TransformControls'
 import landmarks from './landmarks.json';
 
 const modelToRender = 'dentist'
@@ -24,8 +24,8 @@ const LoadModel = () => {
         // [Camera]
         const camera: THREE.PerspectiveCamera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
         //Set how far the camera will be from the 3D model
-        camera.position.z = 350;
-        // camera.position.y = 700;
+        camera.position.z = 180;
+        camera.position.y = -100;
 
         // [Renderer]
         const renderer: THREE.WebGLRenderer = new THREE.WebGLRenderer();
@@ -62,7 +62,7 @@ const LoadModel = () => {
 
         // [Helper]
         const axesHelper = new THREE.AxesHelper(500);
-        scene.add(axesHelper);
+        // scene.add(axesHelper);
         // const gridHelper = new THREE.GridHelper(400);
         // scene.add(gridHelper);
         const stats = new Stats();
@@ -77,8 +77,8 @@ const LoadModel = () => {
         loader.load(`./assets/${modelToRender}/face.glb`, (gltf) => {
             const loadedModel = gltf.scene;
             modelRef.current = loadedModel;
-            transformControls.attach(loadedModel);
-            scene.add(loadedModel);
+            // transformControls.attach(loadedModel);
+            // scene.add(loadedModel);
         }, undefined, (error) => {
             console.log('error', error)
         })
@@ -95,7 +95,7 @@ const LoadModel = () => {
             const ctrlPoint = landmark.worldPt;
             return mTotalCtrlPtCount.push(new THREE.Vector3(ctrlPoint[0], ctrlPoint[1], ctrlPoint[2]));
         })
-        const ctrl_pt_geom = new THREE.SphereGeometry(1.25, 32, 32);
+        const ctrl_pt_geom = new THREE.SphereGeometry(1, 32, 32);
         const ctrl_pt_material = new THREE.MeshLambertMaterial({ color: 0x4d4dff });
         for (var i = 0; i < mTotalCtrlPtCount.length; i++) {
             const ctrl_pt_mesh = new THREE.Mesh(ctrl_pt_geom, ctrl_pt_material);
@@ -155,24 +155,78 @@ const LoadModel = () => {
         // const lattice = new THREE.LineSegments(lattice_line_geom, lattice_line_material);
         // scene.add(lattice);
 
-
-
-        // example
-        // Create buffer geometry for the lines
-        // var geometryAB = new THREE.BufferGeometry();
-        // geometryAB.setFromPoints([A.position, B.position]);
-        // var lineAB = new THREE.Line(geometryAB, lineMaterial);
-        // scene.add(lineAB);
-
-        // var geometryBC = new THREE.BufferGeometry();
-        // geometryBC.setFromPoints([B.position, C.position]);
-        // var lineBC = new THREE.Line(geometryBC, lineMaterial);
-        // scene.add(lineBC);
+        const lineGeometry = new THREE.BufferGeometry();
         const lineMaterial = new THREE.LineBasicMaterial(({ color: 0x0000ff }))
-        const geometryhihi = new THREE.BufferGeometry();
-        geometryhihi.setFromPoints(mTotalCtrlPtCount);
-        const lineAB = new THREE.Line(geometryhihi, lineMaterial);
-        scene.add(lineAB);
+        // lineGeometry.setFromPoints([
+        //     mTotalCtrlPtCount[0],
+        //     mTotalCtrlPtCount[1],
+        //     mTotalCtrlPtCount[2],
+        //     mTotalCtrlPtCount[3],
+        //     mTotalCtrlPtCount[4],
+        //     mTotalCtrlPtCount[5],
+        //     mTotalCtrlPtCount[6],
+        //     mTotalCtrlPtCount[17],
+        //     mTotalCtrlPtCount[36],
+        //     mTotalCtrlPtCount[35],
+        //     mTotalCtrlPtCount[34],
+        //     mTotalCtrlPtCount[30],
+        //     mTotalCtrlPtCount[33],
+        //     mTotalCtrlPtCount[32],
+        //     mTotalCtrlPtCount[31],
+        //     mTotalCtrlPtCount[18],
+        //     mTotalCtrlPtCount[0],
+        //     mTotalCtrlPtCount[7],
+        //     mTotalCtrlPtCount[8],
+        //     mTotalCtrlPtCount[1],
+        //     mTotalCtrlPtCount[8],
+        //     mTotalCtrlPtCount[9],
+        //     mTotalCtrlPtCount[2],
+        //     mTotalCtrlPtCount[9],
+        //     mTotalCtrlPtCount[10],
+        //     mTotalCtrlPtCount[3],
+        //     mTotalCtrlPtCount[10],
+        //     mTotalCtrlPtCount[4],
+        //     mTotalCtrlPtCount[11],
+        //     mTotalCtrlPtCount[6],
+        //     mTotalCtrlPtCount[10],
+        //     mTotalCtrlPtCount[11],
+        //     mTotalCtrlPtCount[12],
+        //     mTotalCtrlPtCount[10],
+        //     mTotalCtrlPtCount[13],
+        //     mTotalCtrlPtCount[9],
+        //     mTotalCtrlPtCount[14],
+        //     mTotalCtrlPtCount[8],
+        //     mTotalCtrlPtCount[15],
+        //     mTotalCtrlPtCount[7],
+        //     mTotalCtrlPtCount[16],
+        //     mTotalCtrlPtCount[15],
+        //     mTotalCtrlPtCount[14],
+        //     mTotalCtrlPtCount[13],
+        //     mTotalCtrlPtCount[12],
+        //     mTotalCtrlPtCount[17],
+        //     mTotalCtrlPtCount[23],
+        //     mTotalCtrlPtCount[22],
+        //     mTotalCtrlPtCount[21],
+        //     mTotalCtrlPtCount[20],
+        //     mTotalCtrlPtCount[19],
+        //     mTotalCtrlPtCount[28],
+        //     mTotalCtrlPtCount[27],
+        //     mTotalCtrlPtCount[26],
+        //     mTotalCtrlPtCount[25],
+        //     mTotalCtrlPtCount[24],
+        //     mTotalCtrlPtCount[23],
+
+        // ]);
+        lineGeometry.setFromPoints([
+            mTotalCtrlPtCount[7],
+            mTotalCtrlPtCount[18],
+        ]);
+        // lineGeometry.setFromPoints(mTotalCtrlPtCount);
+        const line = new THREE.Line(lineGeometry, lineMaterial);
+
+        scene.add(line);
+        // const lattice = new THREE.Mesh(lineGeometry, lineMaterial);
+        // scene.add(lattice);
 
 
 
