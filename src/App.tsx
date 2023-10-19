@@ -1,5 +1,6 @@
 import './App.css';
 import LoadModel from './LoadModel';
+import CubeDemo from './CubeDemo';
 
 function App() {
 

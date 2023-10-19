@@ -6,7 +6,7 @@ import Stats from 'three/examples/jsm/libs/stats.module'
 import { TransformControls } from 'three/examples/jsm/controls/TransformControls';
 
 
-const DemoScene = () => {
+const CubeDemo = () => {
     const sceneRef = useRef<HTMLDivElement>(null);
 
     const stats = new Stats();
@@ -33,8 +33,67 @@ const DemoScene = () => {
 
         // [Cube]
         const cube: THREE.Mesh = new THREE.Mesh(
-            new THREE.BoxGeometry(5, 5, 5, 3),
-            new THREE.MeshBasicMaterial({ color: 0x00ff00, wireframe: true }));
+            new THREE.BoxGeometry(5, 5, 5, 3, 1),
+            new THREE.MeshBasicMaterial({ color: 0xFF00EF, wireframe: true }));
+        console.log('cube', cube)
+
+        function addPoints() {
+            let points = getPoints(cube);
+            let vertexes = getVertexes(points);
+            // addSphereToVertexes(cube, vertexes);
+        }
+
+        function getPoints(cube: THREE.Mesh) {
+            let pointsArray = cube.geometry.attributes.position.array;
+            let itemSize = cube.geometry.attributes.position.itemSize;
+
+            let points: THREE.Vector3[] = [];
+            for (let i = 0; i < pointsArray.length; i += itemSize) {
+                // points.push(new THREE.Vector3(pointsArray[i], pointsArray[i+1], pointsArray[i+2]))
+                console.log("I", i);
+            }
+            return points;
+        }
+
+
+        function getVertexes(points: THREE.Vector3[]) {
+            let vertexes: THREE.Vector3[] = [];
+            points.forEach((indexPoints) => {
+                let equal = false;
+
+                vertexes.forEach((indexVertex) => {
+                    if (indexPoints.equals(indexVertex)) {
+                        equal = true;
+                        return;
+                    }
+                })
+                if (!equal) {
+                    vertexes.push(indexPoints);
+                }
+            })
+
+            return vertexes;
+
+        }
+
+        // function addSphereToVertexes(mesh: THREE.Mesh, vertexes: THREE.Vector3[]){
+        //     const sphereGeometry = 
+        // }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
         // [Sphere]
         const sphere = new THREE.Mesh(
@@ -44,7 +103,7 @@ const DemoScene = () => {
                 wireframe: false
             }));
         sphere.position.set(-10, 10, 0);
-        scene.add(sphere);
+        // scene.add(sphere);
 
         // [Plane] (ground)
         const plane = new THREE.Mesh(
@@ -77,21 +136,24 @@ const DemoScene = () => {
             // Calculate mouse coordinates in normalized device coordinates
             mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
             mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-        
+
             // Update the picking ray with the camera and mouse position
             raycaster.setFromCamera(mouse, camera);
-        
+
             // Check for intersections with the cube
             var intersects = raycaster.intersectObjects([cube]);
-        
+
             // Change cube color if mouse is over it
             if (intersects.length > 0) {
                 // cube.material.color.set(0xff0000); // Change color on hover
-                if(sceneRef.current){
+                if (sceneRef.current) {
                     sceneRef.current.style.cursor = 'pointer'
                 }
             } else {
                 // cube.material.color.set(0x00ff00); // Restore original color
+                if (sceneRef.current) {
+                    sceneRef.current.style.cursor = 'auto'
+                }
             }
         }
 
@@ -240,22 +302,6 @@ const DemoScene = () => {
             sphere.position.y = 10 * Math.abs(Math.sin(step));
             sphere.rotation.x = time / 1500;
 
-            const cubeWorldPosition = new THREE.Vector3();
-            cube.getWorldPosition(cubeWorldPosition);
-            const sphereWorldPosition = new THREE.Vector3();
-            sphere.getWorldPosition(sphereWorldPosition);
-
-            if (debug) {
-                debug.innerText = 'Sphere\n' +
-                    'Local Pos X: ' + sphere.position.x.toFixed(2) +
-                    '\n' +
-                    'World Pos X: ' + sphereWorldPosition.x.toFixed(2) +
-                    '\nCube\n' +
-                    'Local Pos X: ' + cube.position.x.toFixed(2) +
-                    '\n' +
-                    'World Pos X: ' + cubeWorldPosition.x.toFixed(2)
-            }
-
             controls.update();
             stats.update();
             render();
@@ -277,4 +323,4 @@ const DemoScene = () => {
     return <div ref={sceneRef} />
 }
 
-export default DemoScene;
+export default CubeDemo;

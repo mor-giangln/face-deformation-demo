@@ -4,7 +4,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { TransformControls } from 'three/examples/jsm/controls/TransformControls';
 import Stats from 'three/examples/jsm/libs/stats.module';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
-import landmarks from './landmarks.json';
+import landmarks from './landmarksJ.json';
 
 const modelToRender = 'dentist'
 
@@ -17,7 +17,14 @@ const LoadModel = () => {
         // [Scene]
         const scene: THREE.Scene = new THREE.Scene();
         scene.background = new THREE.Color('darkgray');
-        scene.remove();
+
+        const sphereGeometry = new THREE.SphereGeometry(500, 60, 40);
+        const textureLoader = new THREE.TextureLoader();
+        const panoramaTexture = textureLoader.load('./assets/dentist/panorama.jpg')
+        const sphereMaterial = new THREE.MeshBasicMaterial({ map: panoramaTexture, side: THREE.BackSide })
+        const sphereMesh = new THREE.Mesh(sphereGeometry, sphereMaterial);
+        // scene.add(sphereMesh);
+
 
         // [Camera]
         const camera: THREE.PerspectiveCamera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
@@ -29,7 +36,6 @@ const LoadModel = () => {
         const renderer: THREE.WebGLRenderer = new THREE.WebGLRenderer();
         renderer.setSize(window.innerWidth, window.innerHeight);
         sceneRef.current?.appendChild(renderer.domElement);
-        // renderer.setSize(window.innerWidth/2, window.innerHeight/2, false); Keep the size of the app but render it at a lower resolution
 
         // [Light]
         const topLight = new THREE.DirectionalLight(0xffffff, 0.5); // (color, intensity)
@@ -38,6 +44,31 @@ const LoadModel = () => {
         const ambientLight = new THREE.AmbientLight(0xffffff, 1);
         scene.add(ambientLight);
         scene.add(topLight);
+
+        // Load a 3D model (GLTF)
+        const loader = new GLTFLoader();
+        loader.load(`./assets/${modelToRender}/face.glb`, (gltf) => {
+            const loadedModel = gltf.scene;
+            modelRef.current = loadedModel;
+            // Create a wireframe material
+            const wireframeMaterial = new THREE.MeshBasicMaterial({
+                color: 0x00ff00, wireframe: true,
+                wireframeLinecap: 'round',
+                wireframeLinejoin: 'round'
+            });
+
+            // Traverse through all the children of the loaded object
+            loadedModel.traverse(function (child) {
+                if (child instanceof THREE.Mesh) {
+                    // Apply the wireframe material to each mesh
+                    child.material = wireframeMaterial;
+                }
+            });
+            // transformControls.attach(loadedModel);
+            scene.add(loadedModel);
+        }, undefined, (error) => {
+            console.log('error', error)
+        })
 
         // [Controls]
         const orbitControls = new OrbitControls(camera, renderer.domElement);
@@ -58,33 +89,21 @@ const LoadModel = () => {
         const stats = new Stats();
         document.body.appendChild(stats.dom);
         renderer.domElement.addEventListener('mousemove', onDocumentMouseMove, false);
-        renderer.domElement.addEventListener('mousedown', onDocumentMouseDown, false);
+        renderer.domElement.addEventListener('dblclick', onDocumentMouseDown, false);
         const raycaster = new THREE.Raycaster();
 
-        // Load a 3D model (GLTF)
-        const loader = new GLTFLoader();
-        loader.load(`./assets/${modelToRender}/face.glb`, (gltf) => {
-            const loadedModel = gltf.scene;
-            modelRef.current = loadedModel;
-            // transformControls.attach(loadedModel);
-            // scene.add(loadedModel);
-        }, undefined, (error) => {
-            console.log('error', error)
-        })
-
-        // [FFD]
+        // [FFD] ===========================================================================================
         let ctrl_pt_mesh_selected: any = null;
         const ctrl_pt_meshes: THREE.Mesh[] = [];
 
         const mTotalCtrlPtCount: THREE.Vector3[] = [];
-        const latticeVertices: any[] = [];
 
         // [FFD - Control Points]
         landmarks.landmarks.map((landmark) => {
             const ctrlPoint = landmark.worldPt;
             return mTotalCtrlPtCount.push(new THREE.Vector3(ctrlPoint[0], ctrlPoint[1], ctrlPoint[2]));
         })
-        const ctrl_pt_geom = new THREE.SphereGeometry(1, 32, 32);
+        const ctrl_pt_geom = new THREE.SphereGeometry(1, 8, 8);
         const ctrl_pt_material = new THREE.MeshLambertMaterial({ color: 0x4d4dff });
         for (var i = 0; i < mTotalCtrlPtCount.length; i++) {
             const ctrl_pt_mesh = new THREE.Mesh(ctrl_pt_geom, ctrl_pt_material);
@@ -93,125 +112,20 @@ const LoadModel = () => {
             scene.add(ctrl_pt_mesh);
         }
 
-        // const latticePoints: THREE.Vector3[] = createLatticePoints(mTotalCtrlPtCount, segments);
-        // const lattice_line_geom: THREE.BufferGeometry = new THREE.BufferGeometry();
-        // const positions = new Float32Array(latticePoints.length * 3);
-        // for (let i = 0; i < latticePoints.length; i++) {
-        //     positions[i * 3] = latticePoints[i].x;
-        //     positions[i * 3 + 1] = latticePoints[i].y;
-        //     positions[i * 3 + 1] = latticePoints[i].z;
-        // }
-
-        // lattice_line_geom.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-        // const lattice_line_material = new THREE.LineBasicMaterial({ color: 0x4d4dff });
-        // const lattice = new THREE.LineSegments(lattice_line_geom, lattice_line_material);
-        // scene.add(lattice);
-
+        // [FFD - Lines]
         const lineGeometry = new THREE.BufferGeometry();
-        const lineMaterial = new THREE.LineBasicMaterial(({ color: 0x0000ff }))
-        lineGeometry.setFromPoints([
-            mTotalCtrlPtCount[18],
-            mTotalCtrlPtCount[0],
-            mTotalCtrlPtCount[1],
-            mTotalCtrlPtCount[7],
-            mTotalCtrlPtCount[1],
-            mTotalCtrlPtCount[2],
-            mTotalCtrlPtCount[8],
-            mTotalCtrlPtCount[2],
-            mTotalCtrlPtCount[3],
-            mTotalCtrlPtCount[9],
-            mTotalCtrlPtCount[3],
-            mTotalCtrlPtCount[4],
-            mTotalCtrlPtCount[10],
-            mTotalCtrlPtCount[4],
-            mTotalCtrlPtCount[5],
-            mTotalCtrlPtCount[11],
-            mTotalCtrlPtCount[5],
-            mTotalCtrlPtCount[6],
-            mTotalCtrlPtCount[17],
-            mTotalCtrlPtCount[11],
-            mTotalCtrlPtCount[10],
-            mTotalCtrlPtCount[9],
-            mTotalCtrlPtCount[8],
-            mTotalCtrlPtCount[7],
-            mTotalCtrlPtCount[18],
-            mTotalCtrlPtCount[16],
-            mTotalCtrlPtCount[7],
-            mTotalCtrlPtCount[16],
-            mTotalCtrlPtCount[15],
-            mTotalCtrlPtCount[8],
-            mTotalCtrlPtCount[15],
-            mTotalCtrlPtCount[14],
-            mTotalCtrlPtCount[9],
-            mTotalCtrlPtCount[14],
-            mTotalCtrlPtCount[13],
-            mTotalCtrlPtCount[10],
-            mTotalCtrlPtCount[13],
-            mTotalCtrlPtCount[12],
-            mTotalCtrlPtCount[11],
-            mTotalCtrlPtCount[12],
-            mTotalCtrlPtCount[17],
-            mTotalCtrlPtCount[23],
-            mTotalCtrlPtCount[24],
-            mTotalCtrlPtCount[23],
-            mTotalCtrlPtCount[22],
-            mTotalCtrlPtCount[25],
-            mTotalCtrlPtCount[22],
-            mTotalCtrlPtCount[21],
-            mTotalCtrlPtCount[26],
-            mTotalCtrlPtCount[21],
-            mTotalCtrlPtCount[20],
-            mTotalCtrlPtCount[27],
-            mTotalCtrlPtCount[20],
-            mTotalCtrlPtCount[19],
-            mTotalCtrlPtCount[18],
-            mTotalCtrlPtCount[28],
-            mTotalCtrlPtCount[19],
-            mTotalCtrlPtCount[28],
-            mTotalCtrlPtCount[27],
-            mTotalCtrlPtCount[26],
-            mTotalCtrlPtCount[25],
-            mTotalCtrlPtCount[24],
-            mTotalCtrlPtCount[17],
-            mTotalCtrlPtCount[36],
-            mTotalCtrlPtCount[35],
-            mTotalCtrlPtCount[34],
-            mTotalCtrlPtCount[30],
-            mTotalCtrlPtCount[33],
-            mTotalCtrlPtCount[32],
-            mTotalCtrlPtCount[31],
-            mTotalCtrlPtCount[0],
-            mTotalCtrlPtCount[31],
-            mTotalCtrlPtCount[18],
-            mTotalCtrlPtCount[28],
-            mTotalCtrlPtCount[32],
-            mTotalCtrlPtCount[33],
-            mTotalCtrlPtCount[27],
-            mTotalCtrlPtCount[29],
-            mTotalCtrlPtCount[33],
-            mTotalCtrlPtCount[29],
-            mTotalCtrlPtCount[26],
-            mTotalCtrlPtCount[29],
-            mTotalCtrlPtCount[30],
-            mTotalCtrlPtCount[29],
-            mTotalCtrlPtCount[25],
-            mTotalCtrlPtCount[29],
-            mTotalCtrlPtCount[34],
-            mTotalCtrlPtCount[25],
-            mTotalCtrlPtCount[24],
-            mTotalCtrlPtCount[35],
-            mTotalCtrlPtCount[36],
-            mTotalCtrlPtCount[6],
-        ]);
-        // lineGeometry.setFromPoints(mTotalCtrlPtCount);
+        const lineMaterial = new THREE.LineBasicMaterial(({ color: 0x0000ff }));
+        setMyControlPoints();
+
         const line = new THREE.Line(lineGeometry, lineMaterial);
         scene.add(line);
 
         function onDocumentMouseMove(event: any) {
             event.preventDefault();
-            const mouse = new THREE.Vector2();
-            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+            const mouse = {
+                x: (event.clientX / renderer.domElement.clientWidth) * 2 - 1,
+                y: -(event.clientY / renderer.domElement.clientHeight) * 2 + 1
+            } as THREE.Vector2
             raycaster.setFromCamera(mouse, camera);
             var intersects = raycaster.intersectObjects(ctrl_pt_meshes);
             // If the mouse cursor is hovering over a new control point...
@@ -219,7 +133,7 @@ const LoadModel = () => {
 
             if (intersects.length > 0 && ctrl_pt_mesh_selected != intersects[0].object) {
                 // Temporarily change the cursor shape to a fingering cursor.
-                if(sceneRef.current){
+                if (sceneRef.current) {
                     sceneRef.current.style.cursor = 'pointer'
                 }
             }
@@ -230,18 +144,18 @@ const LoadModel = () => {
             }
         }
 
-        function onDocumentMouseDown(event: any) {
+        function onDocumentMouseDown(event: MouseEvent) {
             event.preventDefault();
             console.log('down')
-            const mouse = new THREE.Vector2();
-            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+            const mouse = {
+                x: (event.clientX / renderer.domElement.clientWidth) * 2 - 1,
+                y: -(event.clientY / renderer.domElement.clientHeight) * 2 + 1
+            } as THREE.Vector2
             raycaster.setFromCamera(mouse, camera);
             var intersects = raycaster.intersectObjects(ctrl_pt_meshes);
             // If a new control point is selected...
-            if (intersects.length > 0 && ctrl_pt_mesh_selected != intersects[0].object) {
-                console.log('here')
-                orbitControls.enabled = false;
+            if (intersects.length > 0 && ctrl_pt_mesh_selected !== intersects[0].object) {
+                // orbitControls.enabled = false;
                 // If a control point was selected before, detach it from the transform control.
                 if (ctrl_pt_mesh_selected)
                     transformControls.detach();
@@ -253,8 +167,11 @@ const LoadModel = () => {
             else {
                 // Enable the orbit control so that the user can pan/rotate/zoom. 
                 orbitControls.enabled = true;
+                transformControls.detach();
             }
         }
+
+        // [FFD] ===========================================================================================
 
 
         // Handle window resize
@@ -304,8 +221,102 @@ const LoadModel = () => {
             }
         })
 
-        // const cubeWorldPosition = new THREE.Vector3();
-        // cube.getWorldPosition(cubeWorldPosition);
+        function setMyControlPoints() {
+            lineGeometry.setFromPoints([
+                mTotalCtrlPtCount[18],
+                mTotalCtrlPtCount[0],
+                mTotalCtrlPtCount[1],
+                mTotalCtrlPtCount[7],
+                mTotalCtrlPtCount[1],
+                mTotalCtrlPtCount[2],
+                mTotalCtrlPtCount[8],
+                mTotalCtrlPtCount[2],
+                mTotalCtrlPtCount[3],
+                mTotalCtrlPtCount[9],
+                mTotalCtrlPtCount[3],
+                mTotalCtrlPtCount[4],
+                mTotalCtrlPtCount[10],
+                mTotalCtrlPtCount[4],
+                mTotalCtrlPtCount[5],
+                mTotalCtrlPtCount[11],
+                mTotalCtrlPtCount[5],
+                mTotalCtrlPtCount[6],
+                mTotalCtrlPtCount[17],
+                mTotalCtrlPtCount[11],
+                mTotalCtrlPtCount[10],
+                mTotalCtrlPtCount[9],
+                mTotalCtrlPtCount[8],
+                mTotalCtrlPtCount[7],
+                mTotalCtrlPtCount[18],
+                mTotalCtrlPtCount[16],
+                mTotalCtrlPtCount[7],
+                mTotalCtrlPtCount[16],
+                mTotalCtrlPtCount[15],
+                mTotalCtrlPtCount[8],
+                mTotalCtrlPtCount[15],
+                mTotalCtrlPtCount[14],
+                mTotalCtrlPtCount[9],
+                mTotalCtrlPtCount[14],
+                mTotalCtrlPtCount[13],
+                mTotalCtrlPtCount[10],
+                mTotalCtrlPtCount[13],
+                mTotalCtrlPtCount[12],
+                mTotalCtrlPtCount[11],
+                mTotalCtrlPtCount[12],
+                mTotalCtrlPtCount[17],
+                mTotalCtrlPtCount[23],
+                mTotalCtrlPtCount[24],
+                mTotalCtrlPtCount[23],
+                mTotalCtrlPtCount[22],
+                mTotalCtrlPtCount[25],
+                mTotalCtrlPtCount[22],
+                mTotalCtrlPtCount[21],
+                mTotalCtrlPtCount[26],
+                mTotalCtrlPtCount[21],
+                mTotalCtrlPtCount[20],
+                mTotalCtrlPtCount[27],
+                mTotalCtrlPtCount[20],
+                mTotalCtrlPtCount[19],
+                mTotalCtrlPtCount[18],
+                mTotalCtrlPtCount[28],
+                mTotalCtrlPtCount[19],
+                mTotalCtrlPtCount[28],
+                mTotalCtrlPtCount[27],
+                mTotalCtrlPtCount[26],
+                mTotalCtrlPtCount[25],
+                mTotalCtrlPtCount[24],
+                mTotalCtrlPtCount[17],
+                mTotalCtrlPtCount[36],
+                mTotalCtrlPtCount[35],
+                mTotalCtrlPtCount[34],
+                mTotalCtrlPtCount[30],
+                mTotalCtrlPtCount[33],
+                mTotalCtrlPtCount[32],
+                mTotalCtrlPtCount[31],
+                mTotalCtrlPtCount[0],
+                mTotalCtrlPtCount[31],
+                mTotalCtrlPtCount[18],
+                mTotalCtrlPtCount[28],
+                mTotalCtrlPtCount[32],
+                mTotalCtrlPtCount[33],
+                mTotalCtrlPtCount[27],
+                mTotalCtrlPtCount[29],
+                mTotalCtrlPtCount[33],
+                mTotalCtrlPtCount[29],
+                mTotalCtrlPtCount[26],
+                mTotalCtrlPtCount[29],
+                mTotalCtrlPtCount[30],
+                mTotalCtrlPtCount[29],
+                mTotalCtrlPtCount[25],
+                mTotalCtrlPtCount[29],
+                mTotalCtrlPtCount[34],
+                mTotalCtrlPtCount[25],
+                mTotalCtrlPtCount[24],
+                mTotalCtrlPtCount[35],
+                mTotalCtrlPtCount[36],
+                mTotalCtrlPtCount[6],
+            ]);
+        }
 
         function animate() {
             requestAnimationFrame(animate);
@@ -326,7 +337,7 @@ const LoadModel = () => {
     }, [])
 
 
-    return <div ref={sceneRef} id='debug' />
+    return <div ref={sceneRef} />
 
 }
 
