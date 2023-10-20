@@ -60,6 +60,7 @@ const LoadModel = () => {
             // Traverse through all the children of the loaded object
             loadedModel.traverse(function (child) {
                 if (child instanceof THREE.Mesh) {
+                    console.log('child =>', child.geometry.attributes)
                     // Apply the wireframe material to each mesh
                     child.material = wireframeMaterial;
                 }
@@ -109,7 +110,7 @@ const LoadModel = () => {
             const ctrl_pt_mesh = new THREE.Mesh(ctrl_pt_geom, ctrl_pt_material);
             ctrl_pt_mesh.position.copy(mTotalCtrlPtCount[i]);
             ctrl_pt_meshes.push(ctrl_pt_mesh);
-            scene.add(ctrl_pt_mesh);
+            // scene.add(ctrl_pt_mesh);
         }
 
         // [FFD - Lines]
