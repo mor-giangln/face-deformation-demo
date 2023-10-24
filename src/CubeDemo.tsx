@@ -13,7 +13,6 @@ const CubeDemo = () => {
     document.body.appendChild(stats.dom);
 
     useEffect(() => {
-        const debug = document.getElementById('debug1') as HTMLDivElement
 
         // [Scene]
         const scene: THREE.Scene = new THREE.Scene();
@@ -33,52 +32,141 @@ const CubeDemo = () => {
 
         // [Cube]
         const cube: THREE.Mesh = new THREE.Mesh(
-            new THREE.BoxGeometry(5, 5, 5, 3, 1),
+            new THREE.BoxGeometry(5, 5, 5, 1, 1),
             new THREE.MeshBasicMaterial({ color: 0xFF00EF, wireframe: true }));
-        console.log('cube', cube)
+
+        // [STATE]
+        let ctrl_pt_meshes: THREE.Mesh[] = [];
+        let ctrl_pt_mesh_selected: any = null;
+        let points: THREE.Vector3[] = [];
+        let vertices: THREE.Vector3[] = [];
 
         function addPoints() {
-            let points = getPoints(cube);
-            let vertexes = getVertexes(points);
-            // addSphereToVertexes(cube, vertexes);
+            points = getPoints(cube);
+            vertices = getVertexes(points);
+            addSphereToVertexes(cube, vertices);
         }
 
         function getPoints(cube: THREE.Mesh) {
             let pointsArray = cube.geometry.attributes.position.array;
             let itemSize = cube.geometry.attributes.position.itemSize;
-
             let points: THREE.Vector3[] = [];
+
             for (let i = 0; i < pointsArray.length; i += itemSize) {
-                // points.push(new THREE.Vector3(pointsArray[i], pointsArray[i+1], pointsArray[i+2]))
-                console.log("I", i);
+                points.push(new THREE.Vector3(pointsArray[i], pointsArray[i + 1], pointsArray[i + 2]))
             }
             return points;
         }
 
-
         function getVertexes(points: THREE.Vector3[]) {
-            let vertexes: THREE.Vector3[] = [];
+            let vertices: THREE.Vector3[] = [];
+
             points.forEach((indexPoints) => {
                 let equal = false;
 
-                vertexes.forEach((indexVertex) => {
+                vertices.forEach((indexVertex) => {
                     if (indexPoints.equals(indexVertex)) {
                         equal = true;
                         return;
                     }
                 })
                 if (!equal) {
-                    vertexes.push(indexPoints);
+                    vertices.push(indexPoints);
                 }
             })
-
-            return vertexes;
-
+            return vertices;
         }
 
-        // function addSphereToVertexes(mesh: THREE.Mesh, vertexes: THREE.Vector3[]){
-        //     const sphereGeometry = 
-        // }
+        function addSphereToVertexes(mesh: THREE.Mesh, vertices: THREE.Vector3[]) {
+            const sphereGeometry = new THREE.SphereGeometry(0.2, 32, 32);
+            const sphereMaterial = new THREE.MeshBasicMaterial({ color: 'red' });
+
+            let group = new THREE.Group();
+            group.name = "spheresForMeshEdit";
+
+            vertices.map((item, index) => {
+                let sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
+                sphere.name = 'createMeshHelper';
+                sphere.userData.vertexNumber = `${index}`;
+                group.add(sphere);
+                sphere.position.set(item.x, item.y, item.z);
+                ctrl_pt_meshes.push(sphere);
+            })
+            // scene.add(group);
+            mesh.add(group);
+        }
+
+        addPoints();
+
+        // FFD
+        function transformMesh(editHelper: TransformControls) {
+            moveVertex(
+                editHelper.object?.userData.vertexNumber,
+                editHelper.object?.position
+            )
+        }
+
+        function moveVertex(vertexNumber: any, position: any) {
+            let object: any = cube;
+            object.geometry.parameters = null;
+
+            console.log('vertexNumber =>', vertexNumber);
+            console.log('position =>', position);
+            console.log('vertices =>', vertices);
+            console.log('points =>', points);
+
+            let vertexesPointsIndexes = getVertexesPointsIndexes(points, vertices);
+
+            vertices[+vertexNumber] = position;
+
+            let newPoints = vertexesChangePoints(
+                points,
+                vertices,
+                vertexesPointsIndexes);
+
+            pointsChangeAttributesPosition(cube, newPoints);
+            cube.geometry.attributes.position.needsUpdate = true;
+            cube.geometry.computeBoundingSphere();
+            cube.geometry.computeBoundingBox();
+        }
+
+        function getVertexesPointsIndexes(points: THREE.Vector3[], vertices: THREE.Vector3[]) {
+            let indexesArray: any = [];
+            vertices.map((itemVertex) => {
+                let indexes: any = [];
+                points.forEach((itemPoints, index) => {
+                    if (itemPoints.equals(itemVertex)) {
+                        indexes.push(index);
+                    }
+                })
+                indexesArray.push(indexes);
+            })
+            console.log('aloha123 =>', indexesArray);
+            return indexesArray;
+        }
+
+        function vertexesChangePoints(points: THREE.Vector3[], vertices: THREE.Vector3[], vertexesPointsIndexes: any[]) {
+            vertices.map((itemVertex, index) => {
+                let arrayIndexes = vertexesPointsIndexes[index];
+                arrayIndexes.map((item: any) => (points[item] = itemVertex))
+            });
+
+            points[0] = vertices[0];
+            return points;
+        }
+
+        function pointsChangeAttributesPosition(mesh: THREE.Mesh, points: THREE.Vector3[]) {
+            let positions: any = [];
+            points.map((item: THREE.Vector3) => {
+                positions.push(item.x);
+                positions.push(item.y);
+                positions.push(item.z);
+            });
+
+            let arrayAttr = mesh.geometry.attributes.position.array;
+
+            arrayAttr.map((arrIt: any, index) => mesh.geometry.attributes.position.array[index] = positions[index]);
+        }
 
 
 
@@ -86,34 +174,6 @@ const CubeDemo = () => {
 
 
 
-
-
-
-
-
-
-
-
-
-        // [Sphere]
-        const sphere = new THREE.Mesh(
-            new THREE.SphereGeometry(4, 15, 10),
-            new THREE.MeshBasicMaterial({
-                color: 0x0000FF,
-                wireframe: false
-            }));
-        sphere.position.set(-10, 10, 0);
-        // scene.add(sphere);
-
-        // [Plane] (ground)
-        const plane = new THREE.Mesh(
-            new THREE.PlaneGeometry(30, 30),
-            new THREE.MeshBasicMaterial({
-                color: 0xFFFFFF,
-                side: THREE.DoubleSide
-            }));
-        plane.rotation.x = -0.5 * Math.PI;
-        // scene.add(plane);
 
 
         // [Helper]
@@ -128,9 +188,15 @@ const CubeDemo = () => {
         transformControls.addEventListener('dragging-changed', function (event) {
             controls.enabled = !event.value;
         });
+        transformControls.addEventListener('objectChange', function (event) {
+            // let cubePos = cube.getWorldPosition(new THREE.Vector3());
+            // console.log('cube pos =>', cubePos);
+            transformMesh(event.target);
+        });
         var raycaster = new THREE.Raycaster();
         var mouse = new THREE.Vector2();
         window.addEventListener('mousemove', onMouseMove, false);
+        window.addEventListener('dblclick', onDocumentMouseDown, false);
 
         function onMouseMove(event: any) {
             // Calculate mouse coordinates in normalized device coordinates
@@ -157,50 +223,39 @@ const CubeDemo = () => {
             }
         }
 
+        function onDocumentMouseDown(event: MouseEvent) {
+            event.preventDefault();
+            const mouse = {
+                x: (event.clientX / renderer.domElement.clientWidth) * 2 - 1,
+                y: -(event.clientY / renderer.domElement.clientHeight) * 2 + 1
+            } as THREE.Vector2
+            raycaster.setFromCamera(mouse, camera);
+            var intersects = raycaster.intersectObjects(ctrl_pt_meshes);
+            // If a new control point is selected...
+            if (intersects.length > 0 && ctrl_pt_mesh_selected !== intersects[0].object) {
+                // orbitControls.enabled = false;
+                // If a control point was selected before, detach it from the transform control.
+                if (ctrl_pt_mesh_selected)
+                    transformControls.detach();
+                // Remember the new selection to avoid reselecting the same one.
+                ctrl_pt_mesh_selected = intersects[0].object;
+                // Attach the newly selected control point to the transform control.
+                transformControls.attach(ctrl_pt_mesh_selected);
+            }
+            else {
+                // Enable the orbit control so that the user can pan/rotate/zoom. 
+                controls.enabled = true;
+                transformControls.detach();
+                transformControls.attach(cube);
+            }
+        }
 
         const axesHelper = new THREE.AxesHelper(20);
         scene.add(axesHelper);
         const gridHelper = new THREE.GridHelper(30);
         scene.add(gridHelper);
 
-
-        const sphereOptions = {
-            sphereColor: 0x0000FF,
-            wireframe: false,
-            speed: 0.01,
-
-            // Geometry
-            radius: 1,
-            widthSegments: 8,
-            heightSegments: 6,
-            phiStart: 0,
-            phiLength: Math.PI * 2,
-            thetaStart: 0,
-            thetaLength: Math.PI,
-        };
-
         const gui = new GUI();
-        // GUI of Sphere
-        const sphereGUI = gui.addFolder('Sphere');
-        const sphereRotation = sphereGUI.addFolder('Rotation');
-        const spherePosition = sphereGUI.addFolder('Position');
-        sphereGUI.addColor(sphereOptions, 'sphereColor').onChange(function (e) {
-            sphere.material.color.set(e);
-        })
-        sphereGUI.add(sphereOptions, 'wireframe').onChange(function (e) {
-            sphere.material.wireframe = e;
-        })
-        sphereGUI.add(sphere, 'visible')
-        sphereGUI.add(sphereOptions, 'speed', 0, 0.1);
-        sphereRotation.open();
-        sphereRotation.add(sphere.rotation, 'x', 0, Math.PI * 2);
-        sphereRotation.add(sphere.rotation, 'y', 0, Math.PI * 2);
-        sphereRotation.add(sphere.rotation, 'z', 0, Math.PI * 2);
-        spherePosition.open();
-        spherePosition.add(sphere.position, 'x', -10, 10, 0.1);
-        spherePosition.add(sphere.position, 'y', -10, 10, 0.1);
-        spherePosition.add(sphere.position, 'z', -10, 10, 0.1);
-
         // GUI of Cube
         const cubeOptions = {
             width: 1,
@@ -291,16 +346,8 @@ const CubeDemo = () => {
         })
 
         // Animation
-        let step = 0;
-        const animate = (time: number) => {
+        const animate = () => {
             requestAnimationFrame(animate);
-            // Auto rotate
-            // cube.rotation.x = time / 1500;
-            // cube.rotation.y = time / 1500;
-
-            step += sphereOptions.speed;
-            sphere.position.y = 10 * Math.abs(Math.sin(step));
-            sphere.rotation.x = time / 1500;
 
             controls.update();
             stats.update();
@@ -310,7 +357,7 @@ const CubeDemo = () => {
         function render() {
             renderer.render(scene, camera);
         }
-        animate(1);
+        animate();
 
 
         // Cleanup

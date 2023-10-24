@@ -5,6 +5,7 @@ import { TransformControls } from 'three/examples/jsm/controls/TransformControls
 import Stats from 'three/examples/jsm/libs/stats.module';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import landmarks from './landmarksJ.json';
+import { GUI } from 'dat.gui';
 
 const modelToRender = 'dentist'
 
@@ -17,20 +18,18 @@ const LoadModel = () => {
         // [Scene]
         const scene: THREE.Scene = new THREE.Scene();
         scene.background = new THREE.Color('darkgray');
-
         const sphereGeometry = new THREE.SphereGeometry(500, 60, 40);
+        // [Background]
         const textureLoader = new THREE.TextureLoader();
         const panoramaTexture = textureLoader.load('./assets/dentist/panorama.jpg')
         const sphereMaterial = new THREE.MeshBasicMaterial({ map: panoramaTexture, side: THREE.BackSide })
         const sphereMesh = new THREE.Mesh(sphereGeometry, sphereMaterial);
         // scene.add(sphereMesh);
 
-
         // [Camera]
         const camera: THREE.PerspectiveCamera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
         //Set how far the camera will be from the 3D model
         camera.position.z = 180;
-        camera.position.y = -100;
 
         // [Renderer]
         const renderer: THREE.WebGLRenderer = new THREE.WebGLRenderer();
@@ -47,20 +46,19 @@ const LoadModel = () => {
 
         // Load a 3D model (GLTF)
         const loader = new GLTFLoader();
-        loader.load(`./assets/${modelToRender}/face.glb`, (gltf) => {
+        loader.load(`./assets/${modelToRender}/untitled.glb`, (gltf) => {
             const loadedModel = gltf.scene;
+            console.log('loadmodel =>', loadedModel)
             modelRef.current = loadedModel;
             // Create a wireframe material
             const wireframeMaterial = new THREE.MeshBasicMaterial({
-                color: 0x00ff00, wireframe: true,
-                wireframeLinecap: 'round',
-                wireframeLinejoin: 'round'
+                color: 0xffffff, wireframe: true,
             });
 
             // Traverse through all the children of the loaded object
             loadedModel.traverse(function (child) {
-                if (child instanceof THREE.Mesh) {
-                    console.log('child =>', child.geometry.attributes)
+                if (child instanceof THREE.Mesh && child.name !== 'teeth') {
+                    console.log('child =>', child.name)
                     // Apply the wireframe material to each mesh
                     child.material = wireframeMaterial;
                 }
@@ -83,20 +81,17 @@ const LoadModel = () => {
         })
 
         // [Helper]
-        const axesHelper = new THREE.AxesHelper(500);
+        // const axesHelper = new THREE.AxesHelper(500);
         // scene.add(axesHelper);
-        // const gridHelper = new THREE.GridHelper(400);
-        // scene.add(gridHelper);
+        const gridHelper = new THREE.GridHelper(400);
+        scene.add(gridHelper);
         const stats = new Stats();
         document.body.appendChild(stats.dom);
-        renderer.domElement.addEventListener('mousemove', onDocumentMouseMove, false);
-        renderer.domElement.addEventListener('dblclick', onDocumentMouseDown, false);
-        const raycaster = new THREE.Raycaster();
+        // const gui = new GUI();
 
         // [FFD] ===========================================================================================
         let ctrl_pt_mesh_selected: any = null;
         const ctrl_pt_meshes: THREE.Mesh[] = [];
-
         const mTotalCtrlPtCount: THREE.Vector3[] = [];
 
         // [FFD - Control Points]
@@ -106,12 +101,15 @@ const LoadModel = () => {
         })
         const ctrl_pt_geom = new THREE.SphereGeometry(1, 8, 8);
         const ctrl_pt_material = new THREE.MeshLambertMaterial({ color: 0x4d4dff });
-        for (var i = 0; i < mTotalCtrlPtCount.length; i++) {
-            const ctrl_pt_mesh = new THREE.Mesh(ctrl_pt_geom, ctrl_pt_material);
-            ctrl_pt_mesh.position.copy(mTotalCtrlPtCount[i]);
-            ctrl_pt_meshes.push(ctrl_pt_mesh);
-            // scene.add(ctrl_pt_mesh);
-        }
+        const ctrl_pt_mesh = new THREE.Mesh(ctrl_pt_geom, ctrl_pt_material);
+        ctrl_pt_mesh.position.set(-0.934, -75.393, 102.583);
+        scene.add(ctrl_pt_mesh);
+
+        // for (var i = 0; i < mTotalCtrlPtCount.length; i++) {
+        //     ctrl_pt_mesh.position.copy(mTotalCtrlPtCount[i]);
+        //     ctrl_pt_meshes.push(ctrl_pt_mesh);
+        //     scene.add(ctrl_pt_mesh);
+        // }
 
         // [FFD - Lines]
         const lineGeometry = new THREE.BufferGeometry();
@@ -120,6 +118,10 @@ const LoadModel = () => {
 
         const line = new THREE.Line(lineGeometry, lineMaterial);
         scene.add(line);
+
+        renderer.domElement.addEventListener('mousemove', onDocumentMouseMove, false);
+        renderer.domElement.addEventListener('dblclick', onDocumentMouseDown, false);
+        const raycaster = new THREE.Raycaster();
 
         function onDocumentMouseMove(event: any) {
             event.preventDefault();
@@ -147,7 +149,6 @@ const LoadModel = () => {
 
         function onDocumentMouseDown(event: MouseEvent) {
             event.preventDefault();
-            console.log('down')
             const mouse = {
                 x: (event.clientX / renderer.domElement.clientWidth) * 2 - 1,
                 y: -(event.clientY / renderer.domElement.clientHeight) * 2 + 1
