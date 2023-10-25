@@ -45,6 +45,8 @@ const CubeDemo = () => {
             points = getPoints(cube);
             vertices = getVertexes(points);
             addSphereToVertexes(cube, vertices);
+
+            console.log('cube', cube);
         }
 
         function getPoints(cube: THREE.Mesh) {
@@ -55,6 +57,7 @@ const CubeDemo = () => {
             for (let i = 0; i < pointsArray.length; i += itemSize) {
                 points.push(new THREE.Vector3(pointsArray[i], pointsArray[i + 1], pointsArray[i + 2]))
             }
+            console.log('points =>', points);
             return points;
         }
 
@@ -74,6 +77,7 @@ const CubeDemo = () => {
                     vertices.push(indexPoints);
                 }
             })
+            console.log('vertices', vertices);
             return vertices;
         }
 
@@ -102,11 +106,11 @@ const CubeDemo = () => {
         function transformMesh(editHelper: TransformControls) {
             moveVertex(
                 editHelper.object?.userData.vertexNumber,
-                editHelper.object?.position
+                editHelper.object?.position as THREE.Vector3
             )
         }
 
-        function moveVertex(vertexNumber: any, position: any) {
+        function moveVertex(vertexNumber: any, position: THREE.Vector3) {
             let object: any = cube;
             object.geometry.parameters = null;
 
@@ -164,6 +168,7 @@ const CubeDemo = () => {
             });
 
             let arrayAttr = mesh.geometry.attributes.position.array;
+            console.log('mesh new', mesh);
 
             arrayAttr.map((arrIt: any, index) => mesh.geometry.attributes.position.array[index] = positions[index]);
         }

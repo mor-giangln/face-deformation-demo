@@ -4,7 +4,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { TransformControls } from 'three/examples/jsm/controls/TransformControls';
 import Stats from 'three/examples/jsm/libs/stats.module';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
-import landmarks from './landmarksJ.json';
+import landmarks from './landmarksK.json';
 import { GUI } from 'dat.gui';
 
 const modelToRender = 'dentist'
@@ -15,6 +15,7 @@ const LoadModel = () => {
 
     useEffect(() => {
         // ________________________________________________________________________
+        let faceMesh: THREE.Mesh;
         // [Scene]
         const scene: THREE.Scene = new THREE.Scene();
         scene.background = new THREE.Color('darkgray');
@@ -29,7 +30,7 @@ const LoadModel = () => {
         // [Camera]
         const camera: THREE.PerspectiveCamera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
         //Set how far the camera will be from the 3D model
-        camera.position.z = 180;
+        camera.position.z = 200;
 
         // [Renderer]
         const renderer: THREE.WebGLRenderer = new THREE.WebGLRenderer();
@@ -46,9 +47,8 @@ const LoadModel = () => {
 
         // Load a 3D model (GLTF)
         const loader = new GLTFLoader();
-        loader.load(`./assets/${modelToRender}/untitled.glb`, (gltf) => {
+        loader.load(`./assets/${modelToRender}/face_withTeeth.glb`, (gltf) => {
             const loadedModel = gltf.scene;
-            console.log('loadmodel =>', loadedModel)
             modelRef.current = loadedModel;
             // Create a wireframe material
             const wireframeMaterial = new THREE.MeshBasicMaterial({
@@ -57,10 +57,17 @@ const LoadModel = () => {
 
             // Traverse through all the children of the loaded object
             loadedModel.traverse(function (child) {
-                if (child instanceof THREE.Mesh && child.name !== 'teeth') {
-                    console.log('child =>', child.name)
+                if (child instanceof THREE.Mesh && child.name === 'face') {
+                    console.log('faceMesh =>', child);
+                    faceMesh = child;
                     // Apply the wireframe material to each mesh
+                    addPoints();
+
                     child.material = wireframeMaterial;
+                }
+                if (child instanceof THREE.Mesh && child.name === 'teeth') {
+                    console.log('teeth =>', child);
+                    // Apply the wireframe material to each mesh
                 }
             });
             // transformControls.attach(loadedModel);
@@ -78,46 +85,116 @@ const LoadModel = () => {
         scene.add(transformControls);
         transformControls.addEventListener('dragging-changed', function (event) {
             orbitControls.enabled = !event.value;
-        })
+        });
+        transformControls.addEventListener('objectChange', function (event) {
+            transformMesh(event.target);
+        });
 
         // [Helper]
         // const axesHelper = new THREE.AxesHelper(500);
         // scene.add(axesHelper);
-        const gridHelper = new THREE.GridHelper(400);
-        scene.add(gridHelper);
+        // const gridHelper = new THREE.GridHelper(400);
+        // scene.add(gridHelper);
         const stats = new Stats();
         document.body.appendChild(stats.dom);
         // const gui = new GUI();
 
         // [FFD] ===========================================================================================
+        let points: THREE.Vector3[] = [];
+        let vertices: THREE.Vector3[] = [];
+
         let ctrl_pt_mesh_selected: any = null;
         const ctrl_pt_meshes: THREE.Mesh[] = [];
         const mTotalCtrlPtCount: THREE.Vector3[] = [];
 
+
+
+
+        function addPoints() {
+            points = getPoints(faceMesh);
+            vertices = getVertices(points);
+            addSphereToVertexes(faceMesh, vertices);
+        }
+
+        // Change points Float32Array[] into Vector3[] (X, Y, Z in Blender = X, -Z, Y in ThreeJS)
+        function getPoints(faceMesh: THREE.Mesh) {
+            let pointsArray = faceMesh.geometry.attributes.position.array;
+            let itemSize = faceMesh.geometry.attributes.position.itemSize;
+            let points: THREE.Vector3[] = [];
+
+            for (let i = 0; i < pointsArray.length; i += itemSize) {
+                points.push(new THREE.Vector3(pointsArray[i], -pointsArray[i + 2], pointsArray[i + 1]))
+            }
+            console.log('POINTS =>', points);
+            return points;
+        }
+
+        function getVertices(points: THREE.Vector3[]) {
+            let vertices: THREE.Vector3[] = [];
+
+            points.forEach((indexPoints) => {
+                let equal = false;
+
+                vertices.forEach((indexVertex) => {
+                    if (indexPoints.equals(indexVertex)) {
+                        equal = true;
+                        return;
+                    }
+                })
+                if (!equal) {
+                    vertices.push(indexPoints);
+                }
+            })
+            console.log('vertices =>', vertices);
+
+            return vertices;
+        }
+
         // [FFD - Control Points]
-        landmarks.landmarks.map((landmark) => {
-            const ctrlPoint = landmark.worldPt;
-            return mTotalCtrlPtCount.push(new THREE.Vector3(ctrlPoint[0], ctrlPoint[1], ctrlPoint[2]));
-        })
-        const ctrl_pt_geom = new THREE.SphereGeometry(1, 8, 8);
-        const ctrl_pt_material = new THREE.MeshLambertMaterial({ color: 0x4d4dff });
-        const ctrl_pt_mesh = new THREE.Mesh(ctrl_pt_geom, ctrl_pt_material);
-        ctrl_pt_mesh.position.set(-0.934, -75.393, 102.583);
-        scene.add(ctrl_pt_mesh);
+        function addSphereToVertexes(faceMesh: THREE.Mesh, vertices: THREE.Vector3[]) {
+            const sphereGeometry = new THREE.SphereGeometry(0.5, 32, 32);
+            const sphereMaterial = new THREE.MeshBasicMaterial({ color: 0x4d4dff });
 
-        // for (var i = 0; i < mTotalCtrlPtCount.length; i++) {
-        //     ctrl_pt_mesh.position.copy(mTotalCtrlPtCount[i]);
-        //     ctrl_pt_meshes.push(ctrl_pt_mesh);
-        //     scene.add(ctrl_pt_mesh);
-        // }
+            let group = new THREE.Group();
+            group.name = 'spheresForMeshEdit';
+            landmarks.landmarks.map((landmark, index) => {
+                const ctrlPoint = landmark.worldPt;
+                const ctrl_pt_mesh = new THREE.Mesh(sphereGeometry, sphereMaterial);
+                ctrl_pt_mesh.name = 'createMeshHelper';
+                ctrl_pt_mesh.userData.vertexNumber = `${index}`;
+                ctrl_pt_mesh.position.set(ctrlPoint[0], ctrlPoint[1], ctrlPoint[2]);
 
-        // [FFD - Lines]
-        const lineGeometry = new THREE.BufferGeometry();
-        const lineMaterial = new THREE.LineBasicMaterial(({ color: 0x0000ff }));
-        setMyControlPoints();
+                ctrl_pt_meshes.push(ctrl_pt_mesh);
+                group.add(ctrl_pt_mesh);
+                mTotalCtrlPtCount.push(new THREE.Vector3(ctrlPoint[0], ctrlPoint[1], ctrlPoint[2]));
+                return null;
+            })
+            // [FFD - Lines]
+            // setMyControlPoints();
 
-        const line = new THREE.Line(lineGeometry, lineMaterial);
-        scene.add(line);
+            scene.add(group);
+        }
+
+
+        function transformMesh(editHelper: TransformControls) {
+            console.log('editHelper', editHelper);
+            moveVertex(
+                editHelper.object?.userData.vertexNumber,
+                editHelper.object?.position as THREE.Vector3
+            )
+        }
+
+        function moveVertex(vertexNumber: any, position: THREE.Vector3) {
+            console.log('vertex Number', vertexNumber)
+            console.log('position', position)
+        }
+
+
+
+
+
+
+
 
         renderer.domElement.addEventListener('mousemove', onDocumentMouseMove, false);
         renderer.domElement.addEventListener('dblclick', onDocumentMouseDown, false);
@@ -224,6 +301,9 @@ const LoadModel = () => {
         })
 
         function setMyControlPoints() {
+            const lineGeometry = new THREE.BufferGeometry();
+            const lineMaterial = new THREE.LineBasicMaterial(({ color: 0x0000ff }));
+            const line = new THREE.Line(lineGeometry, lineMaterial);
             lineGeometry.setFromPoints([
                 mTotalCtrlPtCount[18],
                 mTotalCtrlPtCount[0],
@@ -318,6 +398,7 @@ const LoadModel = () => {
                 mTotalCtrlPtCount[36],
                 mTotalCtrlPtCount[6],
             ]);
+            scene.add(line);
         }
 
         function animate() {
