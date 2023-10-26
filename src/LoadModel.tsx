@@ -5,6 +5,7 @@ import { TransformControls } from 'three/examples/jsm/controls/TransformControls
 import Stats from 'three/examples/jsm/libs/stats.module';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import landmarks from './landmarksK.json';
+import landmarksIndex from './landmarksIndex.json';
 import { GUI } from 'dat.gui';
 
 const modelToRender = 'dentist'
@@ -47,7 +48,7 @@ const LoadModel = () => {
 
         // Load a 3D model (GLTF)
         const loader = new GLTFLoader();
-        loader.load(`./assets/${modelToRender}/face_withTeeth.glb`, (gltf) => {
+        loader.load(`./assets/${modelToRender}/faceWithTeeth.glb`, (gltf) => {
             const loadedModel = gltf.scene;
             modelRef.current = loadedModel;
             // Create a wireframe material
@@ -57,7 +58,7 @@ const LoadModel = () => {
 
             // Traverse through all the children of the loaded object
             loadedModel.traverse(function (child) {
-                if (child instanceof THREE.Mesh && child.name === 'face') {
+                if (child instanceof THREE.Mesh && child.name === 'face005') {
                     console.log('faceMesh =>', child);
                     faceMesh = child;
                     // Apply the wireframe material to each mesh
@@ -65,8 +66,8 @@ const LoadModel = () => {
 
                     child.material = wireframeMaterial;
                 }
-                if (child instanceof THREE.Mesh && child.name === 'teeth') {
-                    console.log('teeth =>', child);
+                if (child instanceof THREE.Mesh && child.name === 'face') {
+                    child.material = wireframeMaterial;
                     // Apply the wireframe material to each mesh
                 }
             });
@@ -157,21 +158,36 @@ const LoadModel = () => {
 
             let group = new THREE.Group();
             group.name = 'spheresForMeshEdit';
-            landmarks.landmarks.map((landmark, index) => {
-                const ctrlPoint = landmark.worldPt;
-                const ctrl_pt_mesh = new THREE.Mesh(sphereGeometry, sphereMaterial);
-                ctrl_pt_mesh.name = 'createMeshHelper';
-                ctrl_pt_mesh.userData.vertexNumber = `${index}`;
-                ctrl_pt_mesh.position.set(ctrlPoint[0], ctrlPoint[1], ctrlPoint[2]);
+            // ----------- Generate by coordinates ----------------
+            // landmarks.landmarks.map((landmark, index) => {
+            //     const ctrlPoint = landmark.worldPt;
+            //     const ctrl_pt_mesh = new THREE.Mesh(sphereGeometry, sphereMaterial);
+            //     ctrl_pt_mesh.name = 'createMeshHelper';
+            //     ctrl_pt_mesh.userData.vertexNumber = `${index}`;
+            //     ctrl_pt_mesh.position.set(ctrlPoint[0], ctrlPoint[1], ctrlPoint[2]);
 
-                ctrl_pt_meshes.push(ctrl_pt_mesh);
-                group.add(ctrl_pt_mesh);
-                mTotalCtrlPtCount.push(new THREE.Vector3(ctrlPoint[0], ctrlPoint[1], ctrlPoint[2]));
-                return null;
-            })
+            //     ctrl_pt_meshes.push(ctrl_pt_mesh);
+            //     group.add(ctrl_pt_mesh);
+            //     mTotalCtrlPtCount.push(new THREE.Vector3(ctrlPoint[0], ctrlPoint[1], ctrlPoint[2]));
+            //     return null;
+            // });
             // [FFD - Lines]
             // setMyControlPoints();
 
+            // ----------- Generate by index ----------------
+
+            points.map((vertex, vertexIndex) => {
+                landmarksIndex.landmarks.forEach((landmark) => {
+                    if (vertexIndex == landmark.index) {
+                        const ctrl_pt_mesh = new THREE.Mesh(sphereGeometry, sphereMaterial);
+                        ctrl_pt_mesh.name = landmark.name;
+                        ctrl_pt_mesh.userData.vertexNumber = `${vertexIndex}`;
+                        ctrl_pt_mesh.position.set(vertex.x, vertex.y, vertex.z);
+                        ctrl_pt_meshes.push(ctrl_pt_mesh);
+                        group.add(ctrl_pt_mesh);
+                    }
+                })
+            })
             scene.add(group);
         }
 
@@ -187,6 +203,63 @@ const LoadModel = () => {
         function moveVertex(vertexNumber: any, position: THREE.Vector3) {
             console.log('vertex Number', vertexNumber)
             console.log('position', position)
+            console.log('vertices =>', vertices);
+            console.log('points =>', points);
+            let object: any = faceMesh;
+            object.geometry.parameters = null;
+
+            let vertexesPointsIndexes = getVertexesPointsIndexes(points, vertices);
+        
+            vertices[+vertexNumber] = position;
+
+            let newPoints = vertexesChangePoints(
+                points,
+                vertices,
+                vertexesPointsIndexes);
+
+            pointsChangeAttributesPosition(faceMesh, newPoints);
+            faceMesh.geometry.attributes.position.needsUpdate = true;
+            faceMesh.geometry.computeBoundingSphere();
+            faceMesh.geometry.computeBoundingBox();
+        }
+
+        function getVertexesPointsIndexes(points: THREE.Vector3[], vertices: THREE.Vector3[]){
+            let indexesArray: any = [];
+            vertices.forEach((itemVertex) => {
+                let indexes: any = [];
+                points.forEach((itemPoint, index) => {
+                    if(itemPoint.equals(itemVertex)) {
+                        indexes.push(index);
+                    }
+                })
+                indexesArray.push(indexes);
+            });
+            console.log('Aloha test 123 =>', indexesArray);
+            return indexesArray;
+        }
+
+        function vertexesChangePoints(points: THREE.Vector3[], vertices: THREE.Vector3[], vertexesPointsIndexes: any[]) {
+            vertices.map((itemVertex, index) => {
+                let arrayIndexes = vertexesPointsIndexes[index];
+                arrayIndexes.map((item: any) => (points[item] = itemVertex))
+            });
+
+            points[0] = vertices[0];
+            return points;
+        }
+
+        function pointsChangeAttributesPosition(mesh: THREE.Mesh, points: THREE.Vector3[]) {
+            let positions: any = [];
+            points.map((item: THREE.Vector3) => {
+                positions.push(item.x);
+                positions.push(item.y);
+                positions.push(item.z);
+            });
+
+            let arrayAttr = mesh.geometry.attributes.position.array;
+            console.log('mesh new', mesh);
+
+            arrayAttr.map((arrIt: any, index) => mesh.geometry.attributes.position.array[index] = positions[index]);
         }
 
 

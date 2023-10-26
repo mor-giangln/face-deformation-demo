@@ -11,7 +11,7 @@ function App() {
         "W" translate | "E" rotate | "R" scale | "+/-" adjust size<br />
         "X" toggle X | "Y" toggle Y | "Z" toggle Z | "Spacebar" toggle enabled<br />
       </div>
-      <CubeDemo/>
+      <LoadModel/>
     </div>
   );
 }

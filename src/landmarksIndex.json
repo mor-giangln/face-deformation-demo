@@ -1,0 +1,152 @@
+{
+    "landmarks": [
+        {
+            "name": "ALR",
+            "index": 2275
+        },
+        {
+            "name": "NB1",
+            "index": 2336
+        },
+        {
+            "name": "NB2",
+            "index": 1692
+        },
+        {
+            "name": "CM",
+            "index": 1709
+        },
+        {
+            "name": "NB3",
+            "index": 2338
+        },
+        {
+            "name": "NB4",
+            "index": 2329
+        },
+        {
+            "name": "ALL",
+            "index": 2270
+        },
+        {
+            "name": "UL1",
+            "index": 196
+        },
+        {
+            "name": "UL2",
+            "index": 141
+        },
+        {
+            "name": "UL3",
+            "index": 176
+        },
+        {
+            "name": "UL4",
+            "index": 115
+        },
+        {
+            "name": "UL5",
+            "index": 147
+        },
+        {
+            "name": "UL6",
+            "index": 259
+        },
+        {
+            "name": "UL7",
+            "index": 204
+        },
+        {
+            "name": "UL8",
+            "index": 238
+        },
+        {
+            "name": "UL9",
+            "index": 230
+        },
+        {
+            "name": "UL10",
+            "index": 289
+        },
+        {
+            "name": "CHL",
+            "index": 372
+        },
+        {
+            "name": "CHR",
+            "index": 363
+        },
+        {
+            "name": "LL1",
+            "index": 524
+        },
+        {
+            "name": "LL2",
+            "index": 588
+        },
+        {
+            "name": "LL3",
+            "index": 543
+        },
+        {
+            "name": "LL4",
+            "index": 562
+        },
+        {
+            "name": "LL5",
+            "index": 515
+        },
+        {
+            "name": "LL6",
+            "index": 631
+        },
+        {
+            "name": "LL7",
+            "index": 642
+        },
+        {
+            "name": "LL8",
+            "index": 704
+        },
+        {
+            "name": "LL9",
+            "index": 703
+        },
+        {
+            "name": "LL10",
+            "index": 645
+        },
+        {
+            "name": "PG",
+            "index": 917
+        },
+        {
+            "name": "CL",
+            "index": 1118
+        },
+        {
+            "name": "C1",
+            "index": 673
+        },
+        {
+            "name": "C2",
+            "index": 892
+        },
+        {
+            "name": "C3",
+            "index": 1059
+        },
+        {
+            "name": "C4",
+            "index": 1068
+        },
+        {
+            "name": "C5",
+            "index": 954
+        },
+        {
+            "name": "C6",
+            "index": 773
+        }
+    ]
+}

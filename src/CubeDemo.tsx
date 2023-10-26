@@ -136,7 +136,7 @@ const CubeDemo = () => {
 
         function getVertexesPointsIndexes(points: THREE.Vector3[], vertices: THREE.Vector3[]) {
             let indexesArray: any = [];
-            vertices.map((itemVertex) => {
+            vertices.forEach((itemVertex) => {
                 let indexes: any = [];
                 points.forEach((itemPoints, index) => {
                     if (itemPoints.equals(itemVertex)) {
