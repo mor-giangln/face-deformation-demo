@@ -57,7 +57,6 @@ const CubeDemo = () => {
             for (let i = 0; i < pointsArray.length; i += itemSize) {
                 points.push(new THREE.Vector3(pointsArray[i], pointsArray[i + 1], pointsArray[i + 2]))
             }
-            console.log('points =>', points);
             return points;
         }
 
