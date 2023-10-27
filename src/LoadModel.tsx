@@ -30,7 +30,7 @@ const LoadModel = () => {
         // [Camera]
         const camera: THREE.PerspectiveCamera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
         //Set how far the camera will be from the 3D model
-        camera.position.z = 200;
+        camera.position.z = 300;
 
         // [Renderer]
         const renderer: THREE.WebGLRenderer = new THREE.WebGLRenderer();
@@ -39,9 +39,9 @@ const LoadModel = () => {
 
         // [Light]
         const topLight = new THREE.DirectionalLight(0xffffff, 0.5); // (color, intensity)
-        topLight.position.set(1000, 1000, 2000) //top-left-ish
+        topLight.position.set(100, 100, 200) //top-left-ish
         // topLight.castShadow = true;
-        const ambientLight = new THREE.AmbientLight(0xffffff, 1);
+        const ambientLight = new THREE.AmbientLight(0xffffff, 1.25);
         scene.add(ambientLight);
         scene.add(topLight);
 
@@ -113,7 +113,6 @@ const LoadModel = () => {
             points = getPoints(faceMesh);
             vertices = getVertices(points);
             addSphereToVertexes(faceMesh, vertices);
-            console.log('face', faceMesh);
         }
 
         // Change points Float32Array[] into Vector3[] (X, Y, Z in Blender = X, -Z, Y in ThreeJS)
@@ -125,7 +124,6 @@ const LoadModel = () => {
             for (let i = 0; i < pointsArray.length; i += itemSize) {
                 points.push(new THREE.Vector3(pointsArray[i], pointsArray[i + 1], pointsArray[i + 2]))
             }
-            console.log('POINTS =>', points);
             return points;
         }
 
@@ -145,7 +143,6 @@ const LoadModel = () => {
                     vertices.push(indexPoints);
                 }
             })
-            console.log('vertices =>', vertices);
 
             return vertices;
         }
@@ -183,6 +180,7 @@ const LoadModel = () => {
                         ctrl_pt_mesh.userData.vertexNumber = `${vertexIndex}`;
                         ctrl_pt_mesh.position.set(vertex.x, vertex.y, vertex.z);
                         ctrl_pt_meshes.push(ctrl_pt_mesh);
+                        mTotalCtrlPtCount.push(new THREE.Vector3(vertex.x, vertex.y, vertex.z))
                         group.add(ctrl_pt_mesh);
                     }
                 })
@@ -192,7 +190,6 @@ const LoadModel = () => {
 
 
         function transformMesh(editHelper: TransformControls) {
-            console.log('editHelper', editHelper);
             moveVertex(
                 editHelper.object?.userData.vertexNumber,
                 editHelper.object?.position as THREE.Vector3
@@ -200,10 +197,6 @@ const LoadModel = () => {
         }
 
         function moveVertex(vertexNumber: any, position: THREE.Vector3) {
-            console.log('vertex Number', vertexNumber)
-            console.log('position', position)
-            console.log('vertices =>', vertices);
-            console.log('points =>', points);
             let object: any = faceMesh;
             object.geometry.parameters = null;
 
@@ -217,6 +210,7 @@ const LoadModel = () => {
             //     vertexesPointsIndexes);
 
             // pointsChangeAttributesPosition(faceMesh, newPoints);
+
             points[vertexNumber] = position;
             let positions: any = [];
             points.map((item: THREE.Vector3) => {
@@ -225,7 +219,6 @@ const LoadModel = () => {
                 positions.push(item.z);
             });
             let arrayAttr = faceMesh.geometry.attributes.position.array;
-            console.log('mesh new', faceMesh);
 
             arrayAttr.map((arrIt: any, index) => faceMesh.geometry.attributes.position.array[index] = positions[index]);
 
@@ -273,13 +266,6 @@ const LoadModel = () => {
         //     arrayAttr.map((arrIt: any, index) => mesh.geometry.attributes.position.array[index] = positions[index]);
         // }
 
-
-
-
-
-
-
-
         renderer.domElement.addEventListener('mousemove', onDocumentMouseMove, false);
         renderer.domElement.addEventListener('dblclick', onDocumentMouseDown, false);
         const raycaster = new THREE.Raycaster();
@@ -318,7 +304,6 @@ const LoadModel = () => {
             var intersects = raycaster.intersectObjects(ctrl_pt_meshes);
             // If a new control point is selected...
             if (intersects.length > 0 && ctrl_pt_mesh_selected !== intersects[0].object) {
-                // orbitControls.enabled = false;
                 // If a control point was selected before, detach it from the transform control.
                 if (ctrl_pt_mesh_selected)
                     transformControls.detach();
@@ -385,106 +370,107 @@ const LoadModel = () => {
             }
         })
 
-        function setMyControlPoints() {
-            const lineGeometry = new THREE.BufferGeometry();
-            const lineMaterial = new THREE.LineBasicMaterial(({ color: 0x0000ff }));
-            const line = new THREE.Line(lineGeometry, lineMaterial);
-            lineGeometry.setFromPoints([
-                mTotalCtrlPtCount[18],
-                mTotalCtrlPtCount[0],
-                mTotalCtrlPtCount[1],
-                mTotalCtrlPtCount[7],
-                mTotalCtrlPtCount[1],
-                mTotalCtrlPtCount[2],
-                mTotalCtrlPtCount[8],
-                mTotalCtrlPtCount[2],
-                mTotalCtrlPtCount[3],
-                mTotalCtrlPtCount[9],
-                mTotalCtrlPtCount[3],
-                mTotalCtrlPtCount[4],
-                mTotalCtrlPtCount[10],
-                mTotalCtrlPtCount[4],
-                mTotalCtrlPtCount[5],
-                mTotalCtrlPtCount[11],
-                mTotalCtrlPtCount[5],
-                mTotalCtrlPtCount[6],
-                mTotalCtrlPtCount[17],
-                mTotalCtrlPtCount[11],
-                mTotalCtrlPtCount[10],
-                mTotalCtrlPtCount[9],
-                mTotalCtrlPtCount[8],
-                mTotalCtrlPtCount[7],
-                mTotalCtrlPtCount[18],
-                mTotalCtrlPtCount[16],
-                mTotalCtrlPtCount[7],
-                mTotalCtrlPtCount[16],
-                mTotalCtrlPtCount[15],
-                mTotalCtrlPtCount[8],
-                mTotalCtrlPtCount[15],
-                mTotalCtrlPtCount[14],
-                mTotalCtrlPtCount[9],
-                mTotalCtrlPtCount[14],
-                mTotalCtrlPtCount[13],
-                mTotalCtrlPtCount[10],
-                mTotalCtrlPtCount[13],
-                mTotalCtrlPtCount[12],
-                mTotalCtrlPtCount[11],
-                mTotalCtrlPtCount[12],
-                mTotalCtrlPtCount[17],
-                mTotalCtrlPtCount[23],
-                mTotalCtrlPtCount[24],
-                mTotalCtrlPtCount[23],
-                mTotalCtrlPtCount[22],
-                mTotalCtrlPtCount[25],
-                mTotalCtrlPtCount[22],
-                mTotalCtrlPtCount[21],
-                mTotalCtrlPtCount[26],
-                mTotalCtrlPtCount[21],
-                mTotalCtrlPtCount[20],
-                mTotalCtrlPtCount[27],
-                mTotalCtrlPtCount[20],
-                mTotalCtrlPtCount[19],
-                mTotalCtrlPtCount[18],
-                mTotalCtrlPtCount[28],
-                mTotalCtrlPtCount[19],
-                mTotalCtrlPtCount[28],
-                mTotalCtrlPtCount[27],
-                mTotalCtrlPtCount[26],
-                mTotalCtrlPtCount[25],
-                mTotalCtrlPtCount[24],
-                mTotalCtrlPtCount[17],
-                mTotalCtrlPtCount[36],
-                mTotalCtrlPtCount[35],
-                mTotalCtrlPtCount[34],
-                mTotalCtrlPtCount[30],
-                mTotalCtrlPtCount[33],
-                mTotalCtrlPtCount[32],
-                mTotalCtrlPtCount[31],
-                mTotalCtrlPtCount[0],
-                mTotalCtrlPtCount[31],
-                mTotalCtrlPtCount[18],
-                mTotalCtrlPtCount[28],
-                mTotalCtrlPtCount[32],
-                mTotalCtrlPtCount[33],
-                mTotalCtrlPtCount[27],
-                mTotalCtrlPtCount[29],
-                mTotalCtrlPtCount[33],
-                mTotalCtrlPtCount[29],
-                mTotalCtrlPtCount[26],
-                mTotalCtrlPtCount[29],
-                mTotalCtrlPtCount[30],
-                mTotalCtrlPtCount[29],
-                mTotalCtrlPtCount[25],
-                mTotalCtrlPtCount[29],
-                mTotalCtrlPtCount[34],
-                mTotalCtrlPtCount[25],
-                mTotalCtrlPtCount[24],
-                mTotalCtrlPtCount[35],
-                mTotalCtrlPtCount[36],
-                mTotalCtrlPtCount[6],
-            ]);
-            scene.add(line);
-        }
+        // Lattice draw
+        // function setMyControlPoints() {
+        //     const lineGeometry = new THREE.BufferGeometry();
+        //     const lineMaterial = new THREE.LineBasicMaterial(({ color: 0x0000ff }));
+        //     const line = new THREE.Line(lineGeometry, lineMaterial);
+        //     lineGeometry.setFromPoints([
+        //         mTotalCtrlPtCount[18],
+        //         mTotalCtrlPtCount[0],
+        //         mTotalCtrlPtCount[1],
+        //         mTotalCtrlPtCount[7],
+        //         mTotalCtrlPtCount[1],
+        //         mTotalCtrlPtCount[2],
+        //         mTotalCtrlPtCount[8],
+        //         mTotalCtrlPtCount[2],
+        //         mTotalCtrlPtCount[3],
+        //         mTotalCtrlPtCount[9],
+        //         mTotalCtrlPtCount[3],
+        //         mTotalCtrlPtCount[4],
+        //         mTotalCtrlPtCount[10],
+        //         mTotalCtrlPtCount[4],
+        //         mTotalCtrlPtCount[5],
+        //         mTotalCtrlPtCount[11],
+        //         mTotalCtrlPtCount[5],
+        //         mTotalCtrlPtCount[6],
+        //         mTotalCtrlPtCount[17],
+        //         mTotalCtrlPtCount[11],
+        //         mTotalCtrlPtCount[10],
+        //         mTotalCtrlPtCount[9],
+        //         mTotalCtrlPtCount[8],
+        //         mTotalCtrlPtCount[7],
+        //         mTotalCtrlPtCount[18],
+        //         mTotalCtrlPtCount[16],
+        //         mTotalCtrlPtCount[7],
+        //         mTotalCtrlPtCount[16],
+        //         mTotalCtrlPtCount[15],
+        //         mTotalCtrlPtCount[8],
+        //         mTotalCtrlPtCount[15],
+        //         mTotalCtrlPtCount[14],
+        //         mTotalCtrlPtCount[9],
+        //         mTotalCtrlPtCount[14],
+        //         mTotalCtrlPtCount[13],
+        //         mTotalCtrlPtCount[10],
+        //         mTotalCtrlPtCount[13],
+        //         mTotalCtrlPtCount[12],
+        //         mTotalCtrlPtCount[11],
+        //         mTotalCtrlPtCount[12],
+        //         mTotalCtrlPtCount[17],
+        //         mTotalCtrlPtCount[23],
+        //         mTotalCtrlPtCount[24],
+        //         mTotalCtrlPtCount[23],
+        //         mTotalCtrlPtCount[22],
+        //         mTotalCtrlPtCount[25],
+        //         mTotalCtrlPtCount[22],
+        //         mTotalCtrlPtCount[21],
+        //         mTotalCtrlPtCount[26],
+        //         mTotalCtrlPtCount[21],
+        //         mTotalCtrlPtCount[20],
+        //         mTotalCtrlPtCount[27],
+        //         mTotalCtrlPtCount[20],
+        //         mTotalCtrlPtCount[19],
+        //         mTotalCtrlPtCount[18],
+        //         mTotalCtrlPtCount[28],
+        //         mTotalCtrlPtCount[19],
+        //         mTotalCtrlPtCount[28],
+        //         mTotalCtrlPtCount[27],
+        //         mTotalCtrlPtCount[26],
+        //         mTotalCtrlPtCount[25],
+        //         mTotalCtrlPtCount[24],
+        //         mTotalCtrlPtCount[17],
+        //         mTotalCtrlPtCount[36],
+        //         mTotalCtrlPtCount[35],
+        //         mTotalCtrlPtCount[34],
+        //         mTotalCtrlPtCount[30],
+        //         mTotalCtrlPtCount[33],
+        //         mTotalCtrlPtCount[32],
+        //         mTotalCtrlPtCount[31],
+        //         mTotalCtrlPtCount[0],
+        //         mTotalCtrlPtCount[31],
+        //         mTotalCtrlPtCount[18],
+        //         mTotalCtrlPtCount[28],
+        //         mTotalCtrlPtCount[32],
+        //         mTotalCtrlPtCount[33],
+        //         mTotalCtrlPtCount[27],
+        //         mTotalCtrlPtCount[29],
+        //         mTotalCtrlPtCount[33],
+        //         mTotalCtrlPtCount[29],
+        //         mTotalCtrlPtCount[26],
+        //         mTotalCtrlPtCount[29],
+        //         mTotalCtrlPtCount[30],
+        //         mTotalCtrlPtCount[29],
+        //         mTotalCtrlPtCount[25],
+        //         mTotalCtrlPtCount[29],
+        //         mTotalCtrlPtCount[34],
+        //         mTotalCtrlPtCount[25],
+        //         mTotalCtrlPtCount[24],
+        //         mTotalCtrlPtCount[35],
+        //         mTotalCtrlPtCount[36],
+        //         mTotalCtrlPtCount[6],
+        //     ]);
+        //     scene.add(line);
+        // }
 
         function animate() {
             requestAnimationFrame(animate);
