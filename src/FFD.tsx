@@ -1,5 +1,5 @@
 import { GUI } from 'dat.gui';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { TransformControls } from 'three/examples/jsm/controls/TransformControls';
@@ -9,43 +9,88 @@ import landmarksIndex from './landmarksIndex.json';
 
 const modelToRender = 'dentist'
 
-export default function FFD(){
+export default function FFD() {
     const sceneRef = useRef<HTMLDivElement>(null);
     const modelRef = useRef<THREE.Group | null>(null);
+    let faceMesh: THREE.Mesh;
+    let faceMeshMaterial: THREE.MeshStandardMaterial;
+
+    // [Scene]
+    const scene: THREE.Scene = new THREE.Scene();
+    scene.background = new THREE.Color('darkgray');
+
+    // [Background]
+    const textureLoader = new THREE.TextureLoader();
+    const panoramaTexture = textureLoader.load('./assets/dentist/panorama2.jpg');
+    const sphereGeometry = new THREE.SphereGeometry(500, 60, 40);
+    const sphereMaterial = new THREE.MeshBasicMaterial({ map: panoramaTexture, side: THREE.BackSide });
+    const sphereMesh = new THREE.Mesh(sphereGeometry, sphereMaterial);
+    scene.add(sphereMesh);
+
+    // [Camera]
+    const camera: THREE.PerspectiveCamera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.z = 300; //Set how far the camera will be from the 3D model
+
+    // [Renderer]
+    const renderer: THREE.WebGLRenderer = new THREE.WebGLRenderer();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+
+    // [Light]
+    const topLight = new THREE.DirectionalLight(0xffffff, 1.5);
+    topLight.position.set(0, 20, 200) //top-left-ish
+    topLight.castShadow = true;
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+    scene.add(ambientLight);
+    scene.add(topLight);
+
+    // [Controls]
+    const orbitControls = new OrbitControls(camera, renderer.domElement);
+    orbitControls.enableDamping = true;
+    orbitControls.addEventListener('change', render);
+
+    // [Helper]
+    // const axesHelper = new THREE.AxesHelper(500);
+    // scene.add(axesHelper);
+    // const gridHelper = new THREE.GridHelper(400);
+    // scene.add(gridHelper);
+    const stats = new Stats();
+    document.body.appendChild(stats.dom);
+
+    // [GUI]
+    const gui = new GUI();
+    const meshOptions = {
+        color: 0xffffff,
+        wireframe: false
+    }
+    const meshGUI = gui.addFolder('FaceMesh');
+    meshGUI.open();
+    meshGUI
+        .add(meshOptions, 'wireframe')
+        .onChange((e) => {
+            const wireframeMaterial = new THREE.MeshBasicMaterial({
+                wireframe: true
+            });
+            if (e) {
+                faceMesh.material = wireframeMaterial;
+            } else {
+                faceMesh.material = faceMeshMaterial;
+            }
+        })
+    meshGUI
+        .addColor(meshOptions, 'color')
+        .onChange((e) => {
+            const wireframeMaterial = new THREE.MeshBasicMaterial({
+                color: e, wireframe: true
+            });
+            faceMesh.material = wireframeMaterial;
+        })
+
+    function render() {
+        renderer.render(scene, camera);
+    }
 
     useEffect(() => {
-        // ________________________________________________________________________
-        let faceMesh: THREE.Mesh;
-        let faceMeshMaterial: THREE.MeshStandardMaterial;
-
-        // [Scene]
-        const scene: THREE.Scene = new THREE.Scene();
-        scene.background = new THREE.Color('darkgray');
-
-        // [Background]
-        const textureLoader = new THREE.TextureLoader();
-        const panoramaTexture = textureLoader.load('./assets/dentist/panorama.jpg');
-        const sphereGeometry = new THREE.SphereGeometry(500, 60, 40);
-        const sphereMaterial = new THREE.MeshBasicMaterial({ map: panoramaTexture, side: THREE.BackSide });
-        const sphereMesh = new THREE.Mesh(sphereGeometry, sphereMaterial);
-        scene.add(sphereMesh);
-
-        // [Camera]
-        const camera: THREE.PerspectiveCamera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.z = 300; //Set how far the camera will be from the 3D model
-
-        // [Renderer]
-        const renderer: THREE.WebGLRenderer = new THREE.WebGLRenderer();
-        renderer.setSize(window.innerWidth, window.innerHeight);
         sceneRef.current?.appendChild(renderer.domElement);
-
-        // [Light]
-        const topLight = new THREE.DirectionalLight(0xffffff, 1.5);
-        topLight.position.set(0, 20, 200) //top-left-ish
-        topLight.castShadow = true;
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
-        scene.add(ambientLight);
-        scene.add(topLight);
 
         // Load 3D model (GLTF)
         const loader = new GLTFLoader();
@@ -69,11 +114,6 @@ export default function FFD(){
             console.log('error', error)
         })
 
-        // [Controls]
-        const orbitControls = new OrbitControls(camera, renderer.domElement);
-        orbitControls.enableDamping = true;
-        orbitControls.addEventListener('change', render);
-
         const transformControls = new TransformControls(camera, renderer.domElement);
         scene.add(transformControls);
         transformControls.addEventListener('dragging-changed', function (event) {
@@ -82,32 +122,6 @@ export default function FFD(){
         transformControls.addEventListener('objectChange', function (event) {
             transformMesh(event.target);
         });
-
-        // [Helper]
-        // const axesHelper = new THREE.AxesHelper(500);
-        // scene.add(axesHelper);
-        // const gridHelper = new THREE.GridHelper(400);
-        // scene.add(gridHelper);
-        const stats = new Stats();
-        document.body.appendChild(stats.dom);
-
-        const gui = new GUI();
-        const meshOptions = {
-            wireframe: false
-        }
-        const meshGUI = gui.addFolder('FaceMesh');
-        meshGUI
-            .add(meshOptions, 'wireframe')
-            .onChange((e) => {
-                const wireframeMaterial = new THREE.MeshBasicMaterial({
-                    color: 0xffffff, wireframe: true
-                });
-                if (e) {
-                    faceMesh.material = wireframeMaterial;
-                } else {
-                    faceMesh.material = faceMeshMaterial;
-                }
-            })
 
         // ============================================== [FFD] ==============================================
         let points: THREE.Vector3[] = []; // Points of mesh (faceMesh)
@@ -448,16 +462,11 @@ export default function FFD(){
         }
         animate();
 
-        function render() {
-            renderer.render(scene, camera);
-        }
-
         return () => {
             window.removeEventListener('resize', handleResize);
-            sceneRef.current?.removeChild(renderer.domElement);
+            // sceneRef.current?.removeChild(renderer.domElement);
         }
     }, [])
-
 
     return <div ref={sceneRef} />
 }

@@ -6,7 +6,6 @@ function App() {
 
   return (
     <>
-    {console.log('asd')}
       <div className="App">
         <div id="instructions">
           HEARTVERSE FFD Demo<br />
