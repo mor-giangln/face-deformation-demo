@@ -172,14 +172,6 @@ const CubeDemo = () => {
             arrayAttr.map((arrIt: any, index) => mesh.geometry.attributes.position.array[index] = positions[index]);
         }
 
-
-
-
-
-
-
-
-
         // [Helper]
         const controls = new OrbitControls(camera, renderer.domElement);
         controls.enableDamping = true;
@@ -268,6 +260,7 @@ const CubeDemo = () => {
             widthSegments: 1,
             heightSegments: 1,
             depthSegments: 1,
+            wireframe: true
         }
         const cubeGUI = gui.addFolder('Cube');
         cubeGUI
@@ -288,6 +281,14 @@ const CubeDemo = () => {
         cubeGUI
             .add(cubeOptions, 'depthSegments', 1, 30)
             .onChange(regenerateCube)
+        cubeGUI
+            .add(cubeOptions, 'wireframe')
+            .onChange((e) => {
+                const wireframeMaterial = new THREE.MeshBasicMaterial({
+                    color: 0xffffff, wireframe: e
+                });
+                cube.material = wireframeMaterial;
+            })
 
         function regenerateCube() {
             const newGeometry = new THREE.BoxGeometry(
@@ -296,7 +297,7 @@ const CubeDemo = () => {
                 cubeOptions.depth,
                 cubeOptions.widthSegments,
                 cubeOptions.heightSegments,
-                cubeOptions.depthSegments
+                cubeOptions.depthSegments,
             );
             cube.geometry.dispose();
             cube.geometry = newGeometry;
