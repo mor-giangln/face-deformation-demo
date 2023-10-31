@@ -1,5 +1,5 @@
 import { GUI } from 'dat.gui';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { TransformControls } from 'three/examples/jsm/controls/TransformControls';
@@ -7,7 +7,21 @@ import Stats from 'three/examples/jsm/libs/stats.module';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import landmarksIndex from './landmarksIndex.json';
 
-const modelToRender = 'dentist'
+const modelToRender = 'dentist';
+
+const meshOptions = {
+    color: 0xffffff,
+    wireframe: false
+};
+
+const sphereOptions = {
+    width: 0.5,
+    height: 32,
+    depth: 32,
+    widthSegments: 1,
+    heightSegments: 1,
+    depthSegments: 1,
+};
 
 export default function FFD() {
     const sceneRef = useRef<HTMLDivElement>(null);
@@ -37,7 +51,7 @@ export default function FFD() {
 
     // [Light]
     const topLight = new THREE.DirectionalLight(0xffffff, 1.5);
-    topLight.position.set(0, 20, 200) //top-left-ish
+    topLight.position.set(0, 0, 400) //top-left-ish
     topLight.castShadow = true;
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
     scene.add(ambientLight);
@@ -58,11 +72,9 @@ export default function FFD() {
 
     // [GUI]
     const gui = new GUI();
-    const meshOptions = {
-        color: 0xffffff,
-        wireframe: false
-    }
-    const meshGUI = gui.addFolder('FaceMesh');
+
+    const meshGUI = gui.addFolder('Face Mesh');
+    const ctrlPointGUI = gui.addFolder('Control Point');
     meshGUI.open();
     meshGUI
         .add(meshOptions, 'wireframe')
@@ -84,6 +96,55 @@ export default function FFD() {
             });
             faceMesh.material = wireframeMaterial;
         })
+    ctrlPointGUI
+        .addColor(meshOptions, 'color')
+        .onChange((e) => {
+            const wireframeMaterial = new THREE.MeshBasicMaterial({
+                color: e
+            });
+            faceMesh.traverse((item) => {
+                if (item instanceof THREE.Mesh && item.name !== 'face02') {
+                    item.material = wireframeMaterial
+                }
+            })
+        })
+    ctrlPointGUI
+        .add(sphereOptions, 'width', 0.5, 10)
+        .onChange(regenerateSphere)
+    ctrlPointGUI
+        .add(sphereOptions, 'height', 32, 64)
+        .onChange(regenerateSphere)
+    ctrlPointGUI
+        .add(sphereOptions, 'depth', 32, 64)
+        .onChange(regenerateSphere)
+    ctrlPointGUI
+        .add(sphereOptions, 'widthSegments', 1, 10)
+        .onChange(regenerateSphere)
+    ctrlPointGUI
+        .add(sphereOptions, 'heightSegments', 1, 10)
+        .onChange(regenerateSphere)
+    ctrlPointGUI
+        .add(sphereOptions, 'depthSegments', 1, 10)
+        .onChange(regenerateSphere)
+
+    function regenerateSphere() {
+        const newGeometry = new THREE.SphereGeometry(
+            sphereOptions.width,
+            sphereOptions.height,
+            sphereOptions.depth,
+            sphereOptions.widthSegments,
+            sphereOptions.heightSegments,
+            sphereOptions.depthSegments,
+        );
+        faceMesh.traverse((item) => {
+            if (item instanceof THREE.Mesh && item.name !== 'face02') {
+                item.geometry.dispose();
+                item.geometry = newGeometry
+            }
+        })
+        // cube.geometry.dispose();
+        // cube.geometry = newGeometry;
+    }
 
     function render() {
         renderer.render(scene, camera);
@@ -222,31 +283,34 @@ export default function FFD() {
             let object: any = faceMesh;
             object.geometry.parameters = null;
 
+            let falloffDistance = 2.0;
+            let influence = 0.5;
+
             // let vertexesPointsIndexes = getVertexesPointsIndexes(points, vertices);
-
             // vertices[+vertexNumber] = position;
-
             // let newPoints = vertexesChangePoints(
             //     points,
             //     vertices,
             //     vertexesPointsIndexes);
-
             // pointsChangeAttributesPosition(faceMesh, newPoints);
 
             points[+vertexNumber] = position; // Set new position to vertex
-            let positions: any = [];
-            points.map((item: THREE.Vector3) => {
+            let positions: any = []; // New flat array of position to mapping with the mesh
+            // 
+            points.map((item: THREE.Vector3, index) => {
                 positions.push(item.x);
                 positions.push(item.y);
                 positions.push(item.z);
             });
-            let arrayAttr = faceMesh.geometry.attributes.position.array;
 
-            arrayAttr.map((arrIt: any, index) => arrayAttr[index] = positions[index]);
+            let arrayAttr = faceMesh.geometry.attributes.position.array; // Mesh's vertices flat array
+
+            arrayAttr.map((arrIt: any, index) => arrayAttr[index] = positions[index]); // Re-mapping the mesh's points with new points
 
             faceMesh.geometry.attributes.position.needsUpdate = true;
             faceMesh.geometry.computeBoundingSphere();
             faceMesh.geometry.computeBoundingBox();
+            faceMesh.geometry.computeVertexNormals();
         }
 
         renderer.domElement.addEventListener('mousemove', onDocumentMouseMove, false);
@@ -464,8 +528,13 @@ export default function FFD() {
 
         return () => {
             window.removeEventListener('resize', handleResize);
-            // sceneRef.current?.removeChild(renderer.domElement);
+            sceneRef.current?.removeChild(renderer.domElement);
         }
+    }, [])
+
+    // Testing hooks
+    useEffect(() => {
+
     }, [])
 
     return <div ref={sceneRef} />
