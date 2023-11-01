@@ -39,6 +39,7 @@ export default function FFD() {
     const sphereGeometry = new THREE.SphereGeometry(500, 60, 40);
     const sphereMaterial = new THREE.MeshBasicMaterial({ map: panoramaTexture, side: THREE.BackSide });
     const sphereMesh = new THREE.Mesh(sphereGeometry, sphereMaterial);
+    sphereMesh.rotateY(-250);
     scene.add(sphereMesh);
 
     // [Camera]
@@ -79,22 +80,16 @@ export default function FFD() {
     meshGUI
         .add(meshOptions, 'wireframe')
         .onChange((e) => {
-            const wireframeMaterial = new THREE.MeshBasicMaterial({
-                wireframe: true
-            });
             if (e) {
-                faceMesh.material = wireframeMaterial;
+                (faceMesh.material as THREE.MeshBasicMaterial).wireframe = true;
             } else {
-                faceMesh.material = faceMeshMaterial;
+                (faceMesh.material as THREE.MeshBasicMaterial).wireframe = false;
             }
         })
     meshGUI
         .addColor(meshOptions, 'color')
-        .onChange((e) => {
-            const wireframeMaterial = new THREE.MeshBasicMaterial({
-                color: e, wireframe: true
-            });
-            faceMesh.material = wireframeMaterial;
+        .onChange((value) => {
+            (faceMesh.material as THREE.MeshBasicMaterial).color = new THREE.Color(value);
         })
     ctrlPointGUI
         .addColor(meshOptions, 'color')
@@ -155,18 +150,33 @@ export default function FFD() {
 
         // Load 3D model (GLTF)
         const loader = new GLTFLoader();
-        loader.load(`./assets/${modelToRender}/face-10.glb`, (gltf) => {
+        loader.load(`./assets/${modelToRender}/faceShapeKey.glb`, (gltf) => {
             const loadedModel = gltf.scene;
             modelRef.current = loadedModel;
             // Traverse through all the children of the loaded object
             loadedModel.traverse(function (child) {
-                if (child instanceof THREE.Mesh && child.name === 'face02') {
+                if (child instanceof THREE.Mesh && child.name === 'face') {
+                    console.log('child =>', child)
                     faceMesh = child;
                     faceMeshMaterial = child.material;
-                    generatePoints();
-                }
-                if (child instanceof THREE.Mesh && child.name === 'face') {
-                    // child.material = wireframeMaterial;
+                    generatePoints(false);
+
+                    let options = {
+                        upperLips: 0,
+                        lowerLips: 0
+                    };
+                    let morphChange = (type: number) => {
+                        removePoints();
+                        console.log("child here", child);
+                        if (child.morphTargetInfluences && type === 0) {
+                            child.morphTargetInfluences[0] = options.upperLips;
+                        } else if (child.morphTargetInfluences && type !== 0) {
+                            child.morphTargetInfluences[1] = options.lowerLips;
+                        }
+                        faceMesh = child;
+                    };
+                    meshGUI.add(options, 'upperLips', 0, 1).onChange(() => morphChange(0)).onFinishChange(() => generatePoints(true));
+                    meshGUI.add(options, 'lowerLips', 0, 1).onChange(() => morphChange(1)).onFinishChange(() => generatePoints(true));
                 }
             });
             // transformControls.attach(loadedModel);
@@ -192,14 +202,26 @@ export default function FFD() {
         const controlPoints: THREE.Mesh[] = []; // Control points meshes
         const ctrlPointCoordinates: THREE.Vector3[] = []; // Control points coordinates
 
-        function generatePoints() {
-            points = getPoints(faceMesh);
+        function removePoints() {
+            const controlPointsGroup: any = faceMesh.getObjectByName('controlPoints');
+            faceMesh.remove(controlPointsGroup);
+            points = [];
+            vertices = [];
+        }
+
+        function generatePoints(isRegenerate: boolean) {
+            points = getPoints(faceMesh, isRegenerate);
             vertices = getVertices(points);
             addSphereToVertexes(faceMesh, vertices);
         }
 
         // Change points Float32Array[] into Vector3[] (X, Y, Z in Blender = X, -Z, Y in ThreeJS)
-        function getPoints(faceMesh: THREE.Mesh) {
+        function getPoints(faceMesh: THREE.Mesh, isRegenerate: boolean) {
+            if (isRegenerate) {
+                console.log("REGENERATE");
+            } else {
+                console.log("GENERATE");
+            }
             let pointsArray = faceMesh.geometry.attributes.position.array;
             let itemSize = faceMesh.geometry.attributes.position.itemSize;
             let points: THREE.Vector3[] = [];
@@ -207,6 +229,7 @@ export default function FFD() {
             for (let i = 0; i < pointsArray.length; i += itemSize) {
                 points.push(new THREE.Vector3(pointsArray[i], pointsArray[i + 1], pointsArray[i + 2]))
             }
+            console.log("points after morph", points);
             return points;
         }
 
@@ -232,6 +255,7 @@ export default function FFD() {
 
         // [FFD - Control Points]
         function addSphereToVertexes(faceMesh: THREE.Mesh, vertices: THREE.Vector3[]) {
+            console.log("POINTS => ", points);
             const sphereGeometry = new THREE.SphereGeometry(0.5, 32, 32);
             const sphereMaterial = new THREE.MeshBasicMaterial({ color: 0x4d4dff });
 
