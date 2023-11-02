@@ -159,31 +159,10 @@ export default function FFD() {
             // Traverse through all the children of the loaded object
             loadedModel.traverse(function (child) {
                 if (child instanceof THREE.Mesh && child.name === 'face') {
-                    faceMesh = child;
-                    faceMeshMaterial = child.material;
-                    generatePoints();
-
-                    let options = {
-                        upperLips: 0,
-                        lowerLips: 0
-                    };
-                    let morphChange = (type: number) => {
-                        removePoints(); // Remove old control points
-                        if (child.morphTargetInfluences && type === 0) {
-                            child.morphTargetInfluences[0] = options.upperLips;
-                        } else if (child.morphTargetInfluences && type !== 0) {
-                            child.morphTargetInfluences[1] = options.lowerLips;
-                        }
-                        faceMesh = child;
-                    };
-                    meshGUI.add(options, 'upperLips', 0, 1).onChange(() => morphChange(0)).onFinishChange(() => {
-                        let morphed = computeMorphedAttributes(child);
-                        generatePoints(morphed);
-                    });
-                    meshGUI.add(options, 'lowerLips', 0, 1).onChange(() => morphChange(1)).onFinishChange(() => {
-                        let morphed = computeMorphedAttributes(child);
-                        generatePoints(morphed);
-                    });
+                    console.log('1st facemesh', child);
+                    faceMesh = child; // Save face Mesh
+                    faceMeshMaterial = child.material; // Save face Material
+                    generatePoints(); // Generate Control Points
                 }
             });
             // transformControls.attach(loadedModel);
@@ -203,7 +182,42 @@ export default function FFD() {
         });
 
         // ============================================== [MORPH] ==============================================
-        
+        let morphOptions = {
+            upperLips: 0,
+            lowerLips: 0
+        };
+        let morphChange = (type: number, value: number) => {
+            removePoints(); // Remove old control points
+            if (faceMesh.morphTargetInfluences && type === 0) {
+                faceMesh.morphTargetInfluences[0] = value;
+            } else if (faceMesh.morphTargetInfluences && type !== 0) {
+                faceMesh.morphTargetInfluences[1] = value;
+            }
+        };
+        meshGUI.add(morphOptions, 'upperLips', 0, 1, 0.01).onChange((value) => morphChange(0, value)).onFinishChange(() => {
+            let morphed = computeMorphedAttributes(faceMesh);
+            generatePoints(morphed);
+        });
+        meshGUI.add(morphOptions, 'lowerLips', 0, 1, 0.01).onChange((value) => morphChange(1, value)).onFinishChange((finishvalue) => {
+
+            let morphed: any = computeMorphedAttributes(faceMesh);
+            console.log('value', finishvalue);
+            console.log('faceMesh', faceMesh);
+            console.log('morphed', morphed);
+            // if (finishvalue === 0) {
+            //     // faceMesh.geometry.attributes.position = morphed.positionAttribute;
+            // } else {
+            //     // faceMesh.geometry.setAttribute('position', morphed.morphedPositionAttribute);
+            //     // let arrayAttr = faceMesh.geometry.getAttribute('position').array;
+            //     // arrayAttr.map((arrIt: any, index) => arrayAttr[index] = morphed.morphedPositionAttribute.array[index]); 
+            // }
+
+            // faceMesh.geometry.attributes.position.needsUpdate = true;
+            // faceMesh.geometry.computeBoundingSphere();
+            // faceMesh.geometry.computeBoundingBox();
+            // faceMesh.geometry.computeVertexNormals();
+            generatePoints(morphed);
+        });
 
         // ============================================== [FFD] ==============================================
 
@@ -226,6 +240,8 @@ export default function FFD() {
 
         // Change points Float32Array[] into Vector3[] (X, Y, Z in Blender = X, -Z, Y in ThreeJS)
         function getPoints(faceMesh: THREE.Mesh, morphedAttributes?: any) {
+            // Flat array to Vector3 array
+            // If model is morphed, use morphedAttributes to generate point
             let pointsArray = !morphedAttributes ? faceMesh.geometry.attributes.position.array : morphedAttributes.morphedPositionAttribute.array;
             let itemSize = !morphedAttributes ? faceMesh.geometry.attributes.position.itemSize : morphedAttributes.morphedPositionAttribute.itemSize;
             let points: THREE.Vector3[] = [];
@@ -306,7 +322,6 @@ export default function FFD() {
         }
 
         function moveVertex(vertexNumber: any, position: THREE.Vector3) {
-            console.log('vertex numb =>', vertexNumber)
             let object: any = faceMesh;
             object.geometry.parameters = null;
 
