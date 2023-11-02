@@ -133,9 +133,9 @@ export default function FFD() {
             sphereOptions.depthSegments,
         );
         faceMesh.traverse((item) => {
-            if (item instanceof THREE.Mesh && item.name !== 'face02') {
+            if (item instanceof THREE.Mesh && item.parent?.name === 'controlPoints') {
                 item.geometry.dispose();
-                item.geometry = newGeometry
+                item.geometry = newGeometry;
             }
         })
         // cube.geometry.dispose();
@@ -148,6 +148,8 @@ export default function FFD() {
 
     useEffect(() => {
         sceneRef.current?.appendChild(renderer.domElement);
+        let points: THREE.Vector3[] = []; // Points of mesh (faceMesh)
+        let vertices: THREE.Vector3[] = []; // Vertices of mesh (faceMesh)
 
         // Load 3D model (GLTF)
         const loader = new GLTFLoader();
@@ -157,7 +159,6 @@ export default function FFD() {
             // Traverse through all the children of the loaded object
             loadedModel.traverse(function (child) {
                 if (child instanceof THREE.Mesh && child.name === 'face') {
-                    console.log('child =>', child)
                     faceMesh = child;
                     faceMeshMaterial = child.material;
                     generatePoints();
@@ -167,8 +168,7 @@ export default function FFD() {
                         lowerLips: 0
                     };
                     let morphChange = (type: number) => {
-                        removePoints();
-                        console.log("child here", child);
+                        removePoints(); // Remove old control points
                         if (child.morphTargetInfluences && type === 0) {
                             child.morphTargetInfluences[0] = options.upperLips;
                         } else if (child.morphTargetInfluences && type !== 0) {
@@ -202,9 +202,10 @@ export default function FFD() {
             transformMesh(event.target);
         });
 
+        // ============================================== [MORPH] ==============================================
+        
+
         // ============================================== [FFD] ==============================================
-        let points: THREE.Vector3[] = []; // Points of mesh (faceMesh)
-        let vertices: THREE.Vector3[] = []; // Vertices of mesh (faceMesh)
 
         let selectedControlPoint: any = null; // Selected control point
         const controlPoints: THREE.Mesh[] = []; // Control points meshes
@@ -232,7 +233,6 @@ export default function FFD() {
             for (let i = 0; i < pointsArray.length; i += itemSize) {
                 points.push(new THREE.Vector3(pointsArray[i], pointsArray[i + 1], pointsArray[i + 2]))
             }
-            console.log("points after morph", points);
             return points;
         }
 
@@ -306,6 +306,7 @@ export default function FFD() {
         }
 
         function moveVertex(vertexNumber: any, position: THREE.Vector3) {
+            console.log('vertex numb =>', vertexNumber)
             let object: any = faceMesh;
             object.geometry.parameters = null;
 
