@@ -6,6 +6,7 @@ import { TransformControls } from 'three/examples/jsm/controls/TransformControls
 import Stats from 'three/examples/jsm/libs/stats.module';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import landmarksIndex from './landmarksIndex.json';
+import { computeMorphedAttributes } from 'three/examples/jsm/utils/BufferGeometryUtils';
 
 const modelToRender = 'dentist';
 
@@ -175,8 +176,12 @@ export default function FFD() {
                         }
                         faceMesh = child;
                     };
-                    meshGUI.add(options, 'upperLips', 0, 1).onChange(() => morphChange(0)).onFinishChange(() => generatePoints(true));
-                    meshGUI.add(options, 'lowerLips', 0, 1).onChange(() => morphChange(1)).onFinishChange(() => generatePoints(true));
+                    meshGUI.add(options, 'upperLips', 0, 1).onChange(() => morphChange(0)).onFinishChange(() => {
+                        generatePoints(true);
+                    });
+                    meshGUI.add(options, 'lowerLips', 0, 1).onChange(() => morphChange(1)).onFinishChange(() => {
+                        generatePoints(true);
+                    });
                 }
             });
             // transformControls.attach(loadedModel);
