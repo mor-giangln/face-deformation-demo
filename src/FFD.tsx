@@ -52,10 +52,10 @@ export default function FFD() {
     renderer.setSize(window.innerWidth, window.innerHeight);
 
     // [Light]
-    const topLight = new THREE.DirectionalLight(0xffffff, 1.5);
+    const topLight = new THREE.DirectionalLight(0xffffff, 3);
     topLight.position.set(0, 0, 400) //top-left-ish
     topLight.castShadow = true;
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+    const ambientLight = new THREE.AmbientLight(0xffffff, 2.5);
     scene.add(ambientLight);
     scene.add(topLight);
 
@@ -160,7 +160,7 @@ export default function FFD() {
                     console.log('child =>', child)
                     faceMesh = child;
                     faceMeshMaterial = child.material;
-                    generatePoints(false);
+                    generatePoints();
 
                     let options = {
                         upperLips: 0,
@@ -177,10 +177,12 @@ export default function FFD() {
                         faceMesh = child;
                     };
                     meshGUI.add(options, 'upperLips', 0, 1).onChange(() => morphChange(0)).onFinishChange(() => {
-                        generatePoints(true);
+                        let morphed = computeMorphedAttributes(child);
+                        generatePoints(morphed);
                     });
                     meshGUI.add(options, 'lowerLips', 0, 1).onChange(() => morphChange(1)).onFinishChange(() => {
-                        generatePoints(true);
+                        let morphed = computeMorphedAttributes(child);
+                        generatePoints(morphed);
                     });
                 }
             });
@@ -191,6 +193,7 @@ export default function FFD() {
         })
 
         const transformControls = new TransformControls(camera, renderer.domElement);
+        transformControls.size = 0.5;
         scene.add(transformControls);
         transformControls.addEventListener('dragging-changed', function (event) {
             orbitControls.enabled = !event.value;
@@ -214,21 +217,16 @@ export default function FFD() {
             vertices = [];
         }
 
-        function generatePoints(isRegenerate: boolean) {
-            points = getPoints(faceMesh, isRegenerate);
+        function generatePoints(morphedAttributes?: any) {
+            points = getPoints(faceMesh, morphedAttributes);
             vertices = getVertices(points);
             addSphereToVertexes(faceMesh, vertices);
         }
 
         // Change points Float32Array[] into Vector3[] (X, Y, Z in Blender = X, -Z, Y in ThreeJS)
-        function getPoints(faceMesh: THREE.Mesh, isRegenerate: boolean) {
-            if (isRegenerate) {
-                console.log("REGENERATE");
-            } else {
-                console.log("GENERATE");
-            }
-            let pointsArray = faceMesh.geometry.attributes.position.array;
-            let itemSize = faceMesh.geometry.attributes.position.itemSize;
+        function getPoints(faceMesh: THREE.Mesh, morphedAttributes?: any) {
+            let pointsArray = !morphedAttributes ? faceMesh.geometry.attributes.position.array : morphedAttributes.morphedPositionAttribute.array;
+            let itemSize = !morphedAttributes ? faceMesh.geometry.attributes.position.itemSize : morphedAttributes.morphedPositionAttribute.itemSize;
             let points: THREE.Vector3[] = [];
 
             for (let i = 0; i < pointsArray.length; i += itemSize) {
@@ -260,7 +258,6 @@ export default function FFD() {
 
         // [FFD - Control Points]
         function addSphereToVertexes(faceMesh: THREE.Mesh, vertices: THREE.Vector3[]) {
-            console.log("POINTS => ", points);
             const sphereGeometry = new THREE.SphereGeometry(0.5, 32, 32);
             const sphereMaterial = new THREE.MeshBasicMaterial({ color: 0x4d4dff });
 
@@ -311,17 +308,6 @@ export default function FFD() {
         function moveVertex(vertexNumber: any, position: THREE.Vector3) {
             let object: any = faceMesh;
             object.geometry.parameters = null;
-
-            let falloffDistance = 2.0;
-            let influence = 0.5;
-
-            // let vertexesPointsIndexes = getVertexesPointsIndexes(points, vertices);
-            // vertices[+vertexNumber] = position;
-            // let newPoints = vertexesChangePoints(
-            //     points,
-            //     vertices,
-            //     vertexesPointsIndexes);
-            // pointsChangeAttributesPosition(faceMesh, newPoints);
 
             points[+vertexNumber] = position; // Set new position to vertex
             let positions: any = []; // New flat array of position to mapping with the mesh
