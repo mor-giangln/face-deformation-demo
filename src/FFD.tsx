@@ -99,7 +99,7 @@ export default function FFD() {
                 color: e
             });
             faceMesh.traverse((item) => {
-                if (item instanceof THREE.Mesh && item.name !== 'face02') {
+                if (item instanceof THREE.Mesh && item.parent?.name === 'controlPoints') {
                     item.material = wireframeMaterial
                 }
             })
