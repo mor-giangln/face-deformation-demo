@@ -138,8 +138,6 @@ export default function FFD() {
                 item.geometry = newGeometry;
             }
         })
-        // cube.geometry.dispose();
-        // cube.geometry = newGeometry;
     }
 
     function render() {
@@ -153,13 +151,12 @@ export default function FFD() {
 
         // Load 3D model (GLTF)
         const loader = new GLTFLoader();
-        loader.load(`./assets/${modelToRender}/faceShapeKey.glb`, (gltf) => {
+        loader.load(`./assets/${modelToRender}/faceShapeKeysWithReset.glb`, (gltf) => {
             const loadedModel = gltf.scene;
             modelRef.current = loadedModel;
             // Traverse through all the children of the loaded object
             loadedModel.traverse(function (child) {
                 if (child instanceof THREE.Mesh && child.name === 'face') {
-                    console.log('1st facemesh', child);
                     faceMesh = child; // Save face Mesh
                     faceMeshMaterial = child.material; // Save face Material
                     generatePoints(); // Generate Control Points
@@ -188,10 +185,9 @@ export default function FFD() {
         };
         let morphChange = (type: number, value: number) => {
             removePoints(); // Remove old control points
-            if (faceMesh.morphTargetInfluences && type === 0) {
-                faceMesh.morphTargetInfluences[0] = value;
-            } else if (faceMesh.morphTargetInfluences && type !== 0) {
-                faceMesh.morphTargetInfluences[1] = value;
+
+            if (faceMesh.morphTargetInfluences) {
+                faceMesh.morphTargetInfluences[type] = value;
             }
         };
         meshGUI.add(morphOptions, 'upperLips', 0, 1, 0.01).onChange((value) => morphChange(0, value)).onFinishChange(() => {
@@ -201,24 +197,28 @@ export default function FFD() {
         meshGUI.add(morphOptions, 'lowerLips', 0, 1, 0.01).onChange((value) => morphChange(1, value)).onFinishChange((finishvalue) => {
 
             let morphed: any = computeMorphedAttributes(faceMesh);
-            console.log('value', finishvalue);
-            console.log('faceMesh', faceMesh);
-            console.log('morphed', morphed);
-            // if (finishvalue === 0) {
-            //     // faceMesh.geometry.attributes.position = morphed.positionAttribute;
-            // } else {
-            //     // faceMesh.geometry.setAttribute('position', morphed.morphedPositionAttribute);
-            //     // let arrayAttr = faceMesh.geometry.getAttribute('position').array;
-            //     // arrayAttr.map((arrIt: any, index) => arrayAttr[index] = morphed.morphedPositionAttribute.array[index]); 
-            // }
 
-            // faceMesh.geometry.attributes.position.needsUpdate = true;
-            // faceMesh.geometry.computeBoundingSphere();
-            // faceMesh.geometry.computeBoundingBox();
-            // faceMesh.geometry.computeVertexNormals();
+            console.log('morp', morphed)
+            console.log('mesh after morphed', faceMesh)
             generatePoints(morphed);
-        });
 
+
+            if (finishvalue === 0) {
+                faceMesh.geometry.setAttribute('position', morphed.positionAttribute);
+                faceMesh.geometry.attributes.position.needsUpdate = true;
+
+            } else {
+                // faceMesh.geometry.setAttribute('position', morphed.morphedPositionAttribute);
+                // faceMesh.geometry.computeBoundingSphere();
+                // faceMesh.geometry.computeBoundingBox();
+                // faceMesh.geometry.computeVertexNormals();
+                // let arrayAttr = faceMesh.geometry.getAttribute('position').array;
+                // arrayAttr.map((arrIt: any, index) => arrayAttr[index] = morphed.morphedPositionAttribute.array[index]); 
+                // faceMesh.geometry.attributes.position.needsUpdate = true;
+            }
+
+
+        });
         // ============================================== [FFD] ==============================================
 
         let selectedControlPoint: any = null; // Selected control point
@@ -244,8 +244,8 @@ export default function FFD() {
             // If model is morphed, use morphedAttributes to generate point
             let pointsArray = !morphedAttributes ? faceMesh.geometry.attributes.position.array : morphedAttributes.morphedPositionAttribute.array;
             let itemSize = !morphedAttributes ? faceMesh.geometry.attributes.position.itemSize : morphedAttributes.morphedPositionAttribute.itemSize;
-            let points: THREE.Vector3[] = [];
 
+            let points: THREE.Vector3[] = [];
             for (let i = 0; i < pointsArray.length; i += itemSize) {
                 points.push(new THREE.Vector3(pointsArray[i], pointsArray[i + 1], pointsArray[i + 2]))
             }
@@ -394,6 +394,7 @@ export default function FFD() {
             else {
                 // Enable the orbit control so that the user can pan/rotate/zoom. 
                 orbitControls.enabled = true;
+                selectedControlPoint = null;
                 transformControls.detach();
             }
         }
