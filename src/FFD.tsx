@@ -15,7 +15,6 @@ export default function FFD() {
     const sceneRef = useRef<HTMLDivElement>(null);
     const modelRef = useRef<THREE.Group | null>(null);
     let faceMesh: THREE.Mesh;
-    let faceMeshOrigin: THREE.Mesh;
 
     // [Scene]
     const scene: THREE.Scene = new THREE.Scene();
@@ -61,6 +60,7 @@ export default function FFD() {
 
     // [GUI]
     const gui = new GUI();
+    gui.width = 450;
 
     const meshGUI = gui.addFolder('Face Mesh');
     const ctrlPointGUI = gui.addFolder('Control Point');
@@ -144,9 +144,7 @@ export default function FFD() {
             // Traverse through all the children of the loaded object
             loadedModel.traverse(function (child) {
                 if (child instanceof THREE.Mesh && child.name === 'face') {
-                    console.log('child =>', child)
                     faceMesh = child; // Save face Mesh
-                    faceMeshOrigin = child; // Save face Mesh
                     // (faceMesh.material as THREE.MeshBasicMaterial).wireframe = true;
                     generatePoints(); // Generate Control Points
                 }
@@ -209,12 +207,10 @@ export default function FFD() {
             const controlPointsGroup: any = faceMesh.getObjectByName('controlPoints');
             faceMesh.remove(controlPointsGroup);
             points = [];
-            vertices = [];
         }
 
         function generatePoints(morphedAttributes?: any) {
             points = getPoints(faceMesh, morphedAttributes);
-            vertices = getVertices(points);
             addSphereToVertexes(faceMesh, vertices);
         }
 
@@ -230,26 +226,6 @@ export default function FFD() {
                 points.push(new THREE.Vector3(pointsArray[i], pointsArray[i + 1], pointsArray[i + 2]))
             }
             return points;
-        }
-
-        function getVertices(points: THREE.Vector3[]) {
-            let vertices: THREE.Vector3[] = [];
-
-            points.forEach((indexPoints) => {
-                let equal = false;
-
-                vertices.forEach((indexVertex) => {
-                    if (indexPoints.equals(indexVertex)) {
-                        equal = true;
-                        return;
-                    }
-                })
-                if (!equal) {
-                    vertices.push(indexPoints);
-                }
-            })
-
-            return vertices;
         }
 
         // [FFD - Control Points]
@@ -331,8 +307,6 @@ export default function FFD() {
             raycaster.setFromCamera(mouse, camera);
             var intersects = raycaster.intersectObjects(controlPoints);
             // If the mouse cursor is hovering over a new control point...
-
-
             if (intersects.length > 0 && selectedControlPoint != intersects[0].object) {
                 // Temporarily change the cursor shape to a fingering cursor.
                 if (sceneRef.current) {
@@ -363,7 +337,7 @@ export default function FFD() {
                 selectedControlPoint = intersects[0].object;
                 // Attach the newly selected control point to the transform control.
                 transformControls.attach(selectedControlPoint);
-                console.log('selected point', selectedControlPoint);
+                console.log('Selected point => ', selectedControlPoint);
             }
             else {
                 // Enable the orbit control so that the user can pan/rotate/zoom. 
@@ -421,108 +395,6 @@ export default function FFD() {
                     break;
             }
         })
-
-        // Lattice draw
-        // function setMyControlPoints() {
-        //     const lineGeometry = new THREE.BufferGeometry();
-        //     const lineMaterial = new THREE.LineBasicMaterial(({ color: 0x0000ff }));
-        //     const line = new THREE.Line(lineGeometry, lineMaterial);
-        //     lineGeometry.setFromPoints([
-        //         ctrlPointCoordinates[18],
-        //         ctrlPointCoordinates[0],
-        //         ctrlPointCoordinates[1],
-        //         ctrlPointCoordinates[7],
-        //         ctrlPointCoordinates[1],
-        //         ctrlPointCoordinates[2],
-        //         ctrlPointCoordinates[8],
-        //         ctrlPointCoordinates[2],
-        //         ctrlPointCoordinates[3],
-        //         ctrlPointCoordinates[9],
-        //         ctrlPointCoordinates[3],
-        //         ctrlPointCoordinates[4],
-        //         ctrlPointCoordinates[10],
-        //         ctrlPointCoordinates[4],
-        //         ctrlPointCoordinates[5],
-        //         ctrlPointCoordinates[11],
-        //         ctrlPointCoordinates[5],
-        //         ctrlPointCoordinates[6],
-        //         ctrlPointCoordinates[17],
-        //         ctrlPointCoordinates[11],
-        //         ctrlPointCoordinates[10],
-        //         ctrlPointCoordinates[9],
-        //         ctrlPointCoordinates[8],
-        //         ctrlPointCoordinates[7],
-        //         ctrlPointCoordinates[18],
-        //         ctrlPointCoordinates[16],
-        //         ctrlPointCoordinates[7],
-        //         ctrlPointCoordinates[16],
-        //         ctrlPointCoordinates[15],
-        //         ctrlPointCoordinates[8],
-        //         ctrlPointCoordinates[15],
-        //         ctrlPointCoordinates[14],
-        //         ctrlPointCoordinates[9],
-        //         ctrlPointCoordinates[14],
-        //         ctrlPointCoordinates[13],
-        //         ctrlPointCoordinates[10],
-        //         ctrlPointCoordinates[13],
-        //         ctrlPointCoordinates[12],
-        //         ctrlPointCoordinates[11],
-        //         ctrlPointCoordinates[12],
-        //         ctrlPointCoordinates[17],
-        //         ctrlPointCoordinates[23],
-        //         ctrlPointCoordinates[24],
-        //         ctrlPointCoordinates[23],
-        //         ctrlPointCoordinates[22],
-        //         ctrlPointCoordinates[25],
-        //         ctrlPointCoordinates[22],
-        //         ctrlPointCoordinates[21],
-        //         ctrlPointCoordinates[26],
-        //         ctrlPointCoordinates[21],
-        //         ctrlPointCoordinates[20],
-        //         ctrlPointCoordinates[27],
-        //         ctrlPointCoordinates[20],
-        //         ctrlPointCoordinates[19],
-        //         ctrlPointCoordinates[18],
-        //         ctrlPointCoordinates[28],
-        //         ctrlPointCoordinates[19],
-        //         ctrlPointCoordinates[28],
-        //         ctrlPointCoordinates[27],
-        //         ctrlPointCoordinates[26],
-        //         ctrlPointCoordinates[25],
-        //         ctrlPointCoordinates[24],
-        //         ctrlPointCoordinates[17],
-        //         ctrlPointCoordinates[36],
-        //         ctrlPointCoordinates[35],
-        //         ctrlPointCoordinates[34],
-        //         ctrlPointCoordinates[30],
-        //         ctrlPointCoordinates[33],
-        //         ctrlPointCoordinates[32],
-        //         ctrlPointCoordinates[31],
-        //         ctrlPointCoordinates[0],
-        //         ctrlPointCoordinates[31],
-        //         ctrlPointCoordinates[18],
-        //         ctrlPointCoordinates[28],
-        //         ctrlPointCoordinates[32],
-        //         ctrlPointCoordinates[33],
-        //         ctrlPointCoordinates[27],
-        //         ctrlPointCoordinates[29],
-        //         ctrlPointCoordinates[33],
-        //         ctrlPointCoordinates[29],
-        //         ctrlPointCoordinates[26],
-        //         ctrlPointCoordinates[29],
-        //         ctrlPointCoordinates[30],
-        //         ctrlPointCoordinates[29],
-        //         ctrlPointCoordinates[25],
-        //         ctrlPointCoordinates[29],
-        //         ctrlPointCoordinates[34],
-        //         ctrlPointCoordinates[25],
-        //         ctrlPointCoordinates[24],
-        //         ctrlPointCoordinates[35],
-        //         ctrlPointCoordinates[36],
-        //         ctrlPointCoordinates[6],
-        //     ]);
-        //     scene.add(line);
-        // }
 
         function animate() {
             requestAnimationFrame(animate);
