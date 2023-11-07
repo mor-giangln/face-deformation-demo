@@ -5,30 +5,17 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { TransformControls } from 'three/examples/jsm/controls/TransformControls';
 import Stats from 'three/examples/jsm/libs/stats.module';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
-import landmarksIndex from './landmarksIndex.json';
 import { computeMorphedAttributes } from 'three/examples/jsm/utils/BufferGeometryUtils';
+import { meshOptions, morphOptions, sphereOptions } from './Constant';
+import landmarksIndex from './landmarksIndex.json';
 
 const modelToRender = 'dentist';
-
-const meshOptions = {
-    color: 0xffffff,
-    wireframe: false
-};
-
-const sphereOptions = {
-    width: 0.5,
-    height: 32,
-    depth: 32,
-    widthSegments: 1,
-    heightSegments: 1,
-    depthSegments: 1,
-};
 
 export default function FFD() {
     const sceneRef = useRef<HTMLDivElement>(null);
     const modelRef = useRef<THREE.Group | null>(null);
     let faceMesh: THREE.Mesh;
-    let faceMeshMaterial: THREE.MeshStandardMaterial;
+    let faceMeshOrigin: THREE.Mesh;
 
     // [Scene]
     const scene: THREE.Scene = new THREE.Scene();
@@ -157,8 +144,10 @@ export default function FFD() {
             // Traverse through all the children of the loaded object
             loadedModel.traverse(function (child) {
                 if (child instanceof THREE.Mesh && child.name === 'face') {
+                    console.log('child =>', child)
                     faceMesh = child; // Save face Mesh
-                    faceMeshMaterial = child.material; // Save face Material
+                    faceMeshOrigin = child; // Save face Mesh
+                    // (faceMesh.material as THREE.MeshBasicMaterial).wireframe = true;
                     generatePoints(); // Generate Control Points
                 }
             });
@@ -179,46 +168,37 @@ export default function FFD() {
         });
 
         // ============================================== [MORPH] ==============================================
-        let morphOptions = {
-            upperLips: 0,
-            lowerLips: 0
-        };
         let morphChange = (type: number, value: number) => {
             removePoints(); // Remove old control points
-
             if (faceMesh.morphTargetInfluences) {
                 faceMesh.morphTargetInfluences[type] = value;
             }
         };
-        meshGUI.add(morphOptions, 'upperLips', 0, 1, 0.01).onChange((value) => morphChange(0, value)).onFinishChange(() => {
-            let morphed = computeMorphedAttributes(faceMesh);
-            generatePoints(morphed);
-        });
-        meshGUI.add(morphOptions, 'lowerLips', 0, 1, 0.01).onChange((value) => morphChange(1, value)).onFinishChange((finishvalue) => {
+        meshGUI.add(morphOptions, 'upperLips', 0, 1, 0.01)
+            .onChange((value) => morphChange(0, value))
+            .onFinishChange(async (finishvalue) => {
+                let morphed: any = computeMorphedAttributes(faceMesh);
 
-            let morphed: any = computeMorphedAttributes(faceMesh);
+                await updateMorphedMesh(morphed);
+                generatePoints(morphed);
+            });
+        meshGUI.add(morphOptions, 'lowerLips', 0, 1, 0.01)
+            .onChange((value) => morphChange(1, value))
+            .onFinishChange(async (finishvalue) => {
+                let morphed: any = computeMorphedAttributes(faceMesh);
 
-            console.log('morp', morphed)
-            console.log('mesh after morphed', faceMesh)
-            generatePoints(morphed);
+                await updateMorphedMesh(morphed);
+                generatePoints(morphed);
+            });
 
-
-            if (finishvalue === 0) {
-                faceMesh.geometry.setAttribute('position', morphed.positionAttribute);
-                faceMesh.geometry.attributes.position.needsUpdate = true;
-
-            } else {
-                // faceMesh.geometry.setAttribute('position', morphed.morphedPositionAttribute);
-                // faceMesh.geometry.computeBoundingSphere();
-                // faceMesh.geometry.computeBoundingBox();
-                // faceMesh.geometry.computeVertexNormals();
-                // let arrayAttr = faceMesh.geometry.getAttribute('position').array;
-                // arrayAttr.map((arrIt: any, index) => arrayAttr[index] = morphed.morphedPositionAttribute.array[index]); 
-                // faceMesh.geometry.attributes.position.needsUpdate = true;
-            }
-
-
-        });
+        async function updateMorphedMesh(morphAttributes: any) {
+            faceMesh.geometry.setAttribute('position', morphAttributes.morphedPositionAttribute);
+            faceMesh.geometry.attributes.position.needsUpdate = true;
+            faceMesh.geometry.computeBoundingSphere();
+            faceMesh.geometry.computeBoundingBox();
+            faceMesh.geometry.computeVertexNormals();
+            faceMesh.updateMorphTargets();
+        }
         // ============================================== [FFD] ==============================================
 
         let selectedControlPoint: any = null; // Selected control point
@@ -279,23 +259,6 @@ export default function FFD() {
 
             let group = new THREE.Group();
             group.name = 'controlPoints';
-            // ----------- Generate by coordinates ----------------
-            // landmarks.landmarks.map((landmark, index) => {
-            //     const ctrlPoint = landmark.worldPt;
-            //     const ctrlPointMesh = new THREE.Mesh(sphereGeometry, sphereMaterial);
-            //     ctrlPointMesh.name = 'createMeshHelper';
-            //     ctrlPointMesh.userData.vertexNumber = `${index}`;
-            //     ctrlPointMesh.position.set(ctrlPoint[0], ctrlPoint[1], ctrlPoint[2]);
-
-            //     controlPoints.push(ctrlPointMesh);
-            //     group.add(ctrlPointMesh);
-            //     ctrlPointCoordinates.push(new THREE.Vector3(ctrlPoint[0], ctrlPoint[1], ctrlPoint[2]));
-            //     return null;
-            // });
-
-            // [FFD - Lines]
-            // setMyControlPoints();
-
             // ----------- Generate by index (get index using Blender) ----------------
 
             points.map((vertex, vertexIndex) => {
@@ -347,6 +310,17 @@ export default function FFD() {
         renderer.domElement.addEventListener('mousemove', onDocumentMouseMove, false);
         renderer.domElement.addEventListener('dblclick', onDocumentMouseDown, false);
         const raycaster = new THREE.Raycaster();
+
+        ctrlPointGUI
+            .add(sphereOptions, 'showCtrlPoint')
+            .onChange((e) => {
+                if (e) {
+                    generatePoints();
+                } else {
+                    const controlPointsGroup: any = faceMesh.getObjectByName('controlPoints');
+                    faceMesh.remove(controlPointsGroup);
+                }
+            })
 
         function onDocumentMouseMove(event: any) {
             event.preventDefault();
@@ -562,11 +536,6 @@ export default function FFD() {
             window.removeEventListener('resize', handleResize);
             sceneRef.current?.removeChild(renderer.domElement);
         }
-    }, [])
-
-    // Testing hooks
-    useEffect(() => {
-
     }, [])
 
     return <div ref={sceneRef} />

@@ -1,5 +1,4 @@
 import './App.css';
-import CubeDemo from './CubeDemo';
 import FFD from './FFD';
 
 function App() {
