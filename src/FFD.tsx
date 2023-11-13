@@ -15,6 +15,7 @@ export default function FFD() {
     const sceneRef = useRef<HTMLDivElement>(null);
     const modelRef = useRef<THREE.Group | null>(null);
     let faceMesh: THREE.Mesh;
+    let ffdRadius: number = meshOptions.radius;
 
     // [Scene]
     const scene: THREE.Scene = new THREE.Scene();
@@ -78,6 +79,11 @@ export default function FFD() {
         .addColor(meshOptions, 'color')
         .onChange((value) => {
             (faceMesh.material as THREE.MeshBasicMaterial).color = new THREE.Color(value);
+        })
+    meshGUI
+        .add(meshOptions, 'radius', 10, 2000, 1)
+        .onChange((value) => {
+            ffdRadius = value;
         })
     ctrlPointGUI
         .addColor(meshOptions, 'color')
@@ -202,6 +208,8 @@ export default function FFD() {
         let selectedControlPoint: any = null; // Selected control point
         const controlPoints: THREE.Mesh[] = []; // Control points meshes
         const ctrlPointCoordinates: THREE.Vector3[] = []; // Control points coordinates
+        let nearbyVerticesIndex: any[] = [];
+        let comparePos: any = null;
 
         function removePoints() {
             const controlPointsGroup: any = faceMesh.getObjectByName('controlPoints');
@@ -261,12 +269,15 @@ export default function FFD() {
         }
 
         function moveVertex(vertexNumber: any, position: THREE.Vector3) {
-            let object: any = faceMesh;
-            object.geometry.parameters = null;
+            console.log('nearbyVerticesIndex =>', nearbyVerticesIndex)
+            console.log('position =>', position)
+            console.log('comparePos =>', comparePos)
+
+            // let object: any = faceMesh;
+            // object.geometry.parameters = null;
 
             points[+vertexNumber] = position; // Set new position to vertex
             let positions: any = []; // New flat array of position to mapping with the mesh
-            // 
             points.map((item: THREE.Vector3, index) => {
                 positions.push(item.x);
                 positions.push(item.y);
@@ -283,8 +294,19 @@ export default function FFD() {
             faceMesh.geometry.computeVertexNormals();
         }
 
+        function getNearbyVertices(selectedVertex: any) {
+            nearbyVerticesIndex = [];
+            const vecA: THREE.Vector3 = selectedVertex.position;
+            points.forEach((item, index) => {
+                if (vecA.distanceToSquared(item) < ffdRadius) {
+                    nearbyVerticesIndex.push(index);
+                }
+            })
+        }
+
         renderer.domElement.addEventListener('mousemove', onDocumentMouseMove, false);
-        renderer.domElement.addEventListener('dblclick', onDocumentMouseDown, false);
+        renderer.domElement.addEventListener('mousedown', onDocumentMouseDown, false);
+        renderer.domElement.addEventListener('dblclick', onDocumentMouseDbClick, false);
         const raycaster = new THREE.Raycaster();
 
         ctrlPointGUI
@@ -330,6 +352,7 @@ export default function FFD() {
             var intersects = raycaster.intersectObjects(controlPoints);
             // If a new control point is selected...
             if (intersects.length > 0 && selectedControlPoint !== intersects[0].object) {
+                orbitControls.enabled = false;
                 // If a control point was selected before, detach it from the transform control.
                 if (selectedControlPoint)
                     transformControls.detach();
@@ -337,14 +360,17 @@ export default function FFD() {
                 selectedControlPoint = intersects[0].object;
                 // Attach the newly selected control point to the transform control.
                 transformControls.attach(selectedControlPoint);
-                console.log('Selected point => ', selectedControlPoint);
+                getNearbyVertices(selectedControlPoint);
+                comparePos = selectedControlPoint.position.clone();
             }
-            else {
-                // Enable the orbit control so that the user can pan/rotate/zoom. 
-                orbitControls.enabled = true;
-                selectedControlPoint = null;
-                transformControls.detach();
-            }
+        }
+
+        function onDocumentMouseDbClick(event: MouseEvent) {
+            event.preventDefault();
+            transformControls.detach();
+            selectedControlPoint = null;
+            orbitControls.enabled = true;
+
         }
 
         // ============================================== [FFD] ==============================================

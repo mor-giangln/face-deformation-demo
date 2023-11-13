@@ -1,6 +1,7 @@
 export const meshOptions = {
     color: 0xffffff,
-    wireframe: false
+    wireframe: false,
+    radius: 550
 }
 
 export const sphereOptions = {
