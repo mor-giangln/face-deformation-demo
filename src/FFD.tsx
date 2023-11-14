@@ -268,33 +268,39 @@ export default function FFD() {
             )
         }
 
-        function moveVertex(vertexNumber: any, position: THREE.Vector3) {
-            console.log('nearbyVerticesIndex =>', nearbyVerticesIndex)
-            console.log('position =>', position)
-            console.log('comparePos =>', comparePos)
-            let subbedVector = new THREE.Vector3();
-            subbedVector.subVectors(position, comparePos);
-            console.log('subbedVector =>', subbedVector);
-
+        async function moveVertex(vertexNumber: any, position: THREE.Vector3) {
             // let object: any = faceMesh;
             // object.geometry.parameters = null;
-
-            points[+vertexNumber] = position; // Set new position to vertex
             let positions: any = []; // New flat array of position to mapping with the mesh
-            points.map((item: THREE.Vector3, index) => {
-                positions.push(item.x);
-                positions.push(item.y);
-                positions.push(item.z);
-            });
+            let subbedVector = new THREE.Vector3();
+            let resultVector = new THREE.Vector3();
 
-            let arrayAttr = faceMesh.geometry.attributes.position.array; // Mesh's vertices flat array
+            async function moveOneVertex() {
 
-            arrayAttr.map((arrIt: any, index) => arrayAttr[index] = positions[index]); // Re-mapping the mesh's points with new points
+                subbedVector.subVectors(position, comparePos);
+                // for (let i = 0; i < nearbyVerticesIndex.length; i++) {
+                //     points[+vertexNumber] = position; // Set new position to vertex
+                //     points[+nearbyVerticesIndex] = resultVector.addVectors(points[+nearbyVerticesIndex[i]], subbedVector)
+                // }
+                points[+vertexNumber] = position; // Set new position to vertex
+                points.map((item: THREE.Vector3, index) => {
+                    positions.push(item.x);
+                    positions.push(item.y);
+                    positions.push(item.z);
+                });
+                let arrayAttr = faceMesh.geometry.attributes.position.array; // Mesh's vertices flat array
+                arrayAttr.map((arrIt: any, index) => arrayAttr[index] = positions[index]); // Re-mapping the mesh's points with new points
+                faceMesh.geometry.attributes.position.needsUpdate = true;
+                faceMesh.geometry.computeBoundingSphere();
+                faceMesh.geometry.computeBoundingBox();
+                faceMesh.geometry.computeVertexNormals();
+                // console.log('Position =>', position);
+                // console.log('Sub Vector =>', subbedVector);
+                // console.log('Result Vector =>', resultVector.addVectors(points[802], subbedVector))
+            }
+            // await moveNearbyVertices();
+            await moveOneVertex();
 
-            faceMesh.geometry.attributes.position.needsUpdate = true;
-            faceMesh.geometry.computeBoundingSphere();
-            faceMesh.geometry.computeBoundingBox();
-            faceMesh.geometry.computeVertexNormals();
         }
 
         function getNearbyVertices(selectedVertex: any) {
@@ -303,6 +309,8 @@ export default function FFD() {
             points.forEach((item, index) => {
                 if (vecA.distanceToSquared(item) < ffdRadius) {
                     nearbyVerticesIndex.push(index);
+                    console.log('Item name', item)
+                    console.log('Item index', index)
                 }
             })
         }

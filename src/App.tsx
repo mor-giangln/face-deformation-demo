@@ -6,12 +6,12 @@ function App() {
   return (
     <>
       <div className="App">
-        <div id="instructions">
+        {/* <div id="instructions">
           HEARTVERSE FFD Demo<br />
           Click into control points to deform<br />
           "W" translate | "E" rotate | "R" scale | "+/-" adjust size<br />
           "X" toggle X | "Y" toggle Y | "Z" toggle Z | "Spacebar" toggle enabled<br />
-        </div>
+        </div> */}
         <FFD />
       </div></>
   );
