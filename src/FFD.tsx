@@ -272,6 +272,9 @@ export default function FFD() {
             console.log('nearbyVerticesIndex =>', nearbyVerticesIndex)
             console.log('position =>', position)
             console.log('comparePos =>', comparePos)
+            let subbedVector = new THREE.Vector3();
+            subbedVector.subVectors(position, comparePos);
+            console.log('subbedVector =>', subbedVector);
 
             // let object: any = faceMesh;
             // object.geometry.parameters = null;
