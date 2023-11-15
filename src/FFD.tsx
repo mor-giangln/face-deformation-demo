@@ -15,6 +15,7 @@ export default function FFD() {
     const sceneRef = useRef<HTMLDivElement>(null);
     const modelRef = useRef<THREE.Group | null>(null);
     let faceMesh: THREE.Mesh;
+    let initialModelGeometry = new THREE.BufferGeometry();
     let ffdRadius: number = meshOptions.radius;
 
     // [Scene]
@@ -80,11 +81,6 @@ export default function FFD() {
         .onChange((value) => {
             (faceMesh.material as THREE.MeshBasicMaterial).color = new THREE.Color(value);
         })
-    meshGUI
-        .add(meshOptions, 'radius', 10, 2000, 1)
-        .onChange((value) => {
-            ffdRadius = value;
-        })
     ctrlPointGUI
         .addColor(meshOptions, 'color')
         .onChange((e) => {
@@ -139,6 +135,11 @@ export default function FFD() {
 
     useEffect(() => {
         sceneRef.current?.appendChild(renderer.domElement);
+        const raycaster = new THREE.Raycaster();
+        const transformControls = new TransformControls(camera, renderer.domElement);
+        transformControls.size = 0.5;
+        scene.add(transformControls);
+
         let points: THREE.Vector3[] = []; // Points of mesh (faceMesh)
         let vertices: THREE.Vector3[] = []; // Vertices of mesh (faceMesh)
 
@@ -151,6 +152,7 @@ export default function FFD() {
             loadedModel.traverse(function (child) {
                 if (child instanceof THREE.Mesh && child.name === 'face') {
                     faceMesh = child; // Save face Mesh
+                    initialModelGeometry = child.geometry.clone(); // Save faceMesh geometry
                     // (faceMesh.material as THREE.MeshBasicMaterial).wireframe = true;
                     generatePoints(); // Generate Control Points
                 }
@@ -160,16 +162,6 @@ export default function FFD() {
         }, undefined, (error) => {
             console.log('error', error)
         })
-
-        const transformControls = new TransformControls(camera, renderer.domElement);
-        transformControls.size = 0.5;
-        scene.add(transformControls);
-        transformControls.addEventListener('dragging-changed', function (event) {
-            orbitControls.enabled = !event.value;
-        });
-        transformControls.addEventListener('objectChange', function (event) {
-            transformMesh(event.target);
-        });
 
         // ============================================== [MORPH] ==============================================
         let morphChange = (type: number, value: number) => {
@@ -208,15 +200,28 @@ export default function FFD() {
         let selectedControlPoint: any = null; // Selected control point
         const controlPoints: THREE.Mesh[] = []; // Control points meshes
         const ctrlPointCoordinates: THREE.Vector3[] = []; // Control points coordinates
-        let nearbyVerticesIndex: any[] = [];
+        let nearbyVertices: any[] = [];
         let comparePos: any = null;
 
+        // Reverse model's geometry to initial state
+        function reverseGeometry() {
+            removePoints();
+            generatePoints();
+            faceMesh.geometry = initialModelGeometry;
+            faceMesh.geometry.attributes.position.needsUpdate = true;
+            faceMesh.geometry.computeBoundingSphere();
+            faceMesh.geometry.computeBoundingBox();
+            faceMesh.geometry.computeVertexNormals();
+        }
+
+        // Remove old control points
         function removePoints() {
             const controlPointsGroup: any = faceMesh.getObjectByName('controlPoints');
             faceMesh.remove(controlPointsGroup);
             points = [];
         }
 
+        // Generate control points based on model's vertices and vertexIndex
         function generatePoints(morphedAttributes?: any) {
             points = getPoints(faceMesh, morphedAttributes);
             addSphereToVertexes(faceMesh, vertices);
@@ -236,7 +241,7 @@ export default function FFD() {
             return points;
         }
 
-        // [FFD - Control Points]
+        // [Control Points]
         function addSphereToVertexes(faceMesh: THREE.Mesh, vertices: THREE.Vector3[]) {
             const sphereGeometry = new THREE.SphereGeometry(0.5, 32, 32);
             const sphereMaterial = new THREE.MeshBasicMaterial({ color: 0x4d4dff });
@@ -268,20 +273,23 @@ export default function FFD() {
             )
         }
 
-        async function moveVertex(vertexNumber: any, position: THREE.Vector3) {
+        function moveVertex(vertexNumber: any, position: THREE.Vector3) {
             // let object: any = faceMesh;
             // object.geometry.parameters = null;
-            let positions: any = []; // New flat array of position to mapping with the mesh
-            let subbedVector = new THREE.Vector3();
-            let resultVector = new THREE.Vector3();
 
-            async function moveOneVertex() {
+            function moveNearbyVertices() {
+                let subbedVector = new THREE.Vector3();
+                subbedVector.subVectors(position, comparePos); // Get the new vector of difference between old position and new
 
-                subbedVector.subVectors(position, comparePos);
-                // for (let i = 0; i < nearbyVerticesIndex.length; i++) {
-                //     points[+vertexNumber] = position; // Set new position to vertex
-                //     points[+nearbyVerticesIndex] = resultVector.addVectors(points[+nearbyVerticesIndex[i]], subbedVector)
-                // }
+                nearbyVertices.map((nearbyVertex, index) => {
+                    const vertexVector = new THREE.Vector3(nearbyVertex.value.x, nearbyVertex.value.y, nearbyVertex.value.z);
+                    points[nearbyVertex.verticesIndex] = vertexVector.add(subbedVector);
+                })
+            }
+
+            function moveOneVertex() {
+                let positions: any = []; // New flat array of position to mapping with the mesh
+
                 points[+vertexNumber] = position; // Set new position to vertex
                 points.map((item: THREE.Vector3, index) => {
                     positions.push(item.x);
@@ -294,42 +302,25 @@ export default function FFD() {
                 faceMesh.geometry.computeBoundingSphere();
                 faceMesh.geometry.computeBoundingBox();
                 faceMesh.geometry.computeVertexNormals();
-                // console.log('Position =>', position);
-                // console.log('Sub Vector =>', subbedVector);
-                // console.log('Result Vector =>', resultVector.addVectors(points[802], subbedVector))
             }
-            // await moveNearbyVertices();
-            await moveOneVertex();
+
+            moveNearbyVertices();
+            moveOneVertex();
 
         }
 
         function getNearbyVertices(selectedVertex: any) {
-            nearbyVerticesIndex = [];
             const vecA: THREE.Vector3 = selectedVertex.position;
+            nearbyVertices = [];
             points.forEach((item, index) => {
                 if (vecA.distanceToSquared(item) < ffdRadius) {
-                    nearbyVerticesIndex.push(index);
-                    console.log('Item name', item)
-                    console.log('Item index', index)
+                    nearbyVertices.push({
+                        verticesIndex: index,
+                        value: item
+                    })
                 }
             })
         }
-
-        renderer.domElement.addEventListener('mousemove', onDocumentMouseMove, false);
-        renderer.domElement.addEventListener('mousedown', onDocumentMouseDown, false);
-        renderer.domElement.addEventListener('dblclick', onDocumentMouseDbClick, false);
-        const raycaster = new THREE.Raycaster();
-
-        ctrlPointGUI
-            .add(sphereOptions, 'showCtrlPoint')
-            .onChange((e) => {
-                if (e) {
-                    generatePoints();
-                } else {
-                    const controlPointsGroup: any = faceMesh.getObjectByName('controlPoints');
-                    faceMesh.remove(controlPointsGroup);
-                }
-            })
 
         function onDocumentMouseMove(event: any) {
             event.preventDefault();
@@ -363,7 +354,7 @@ export default function FFD() {
             var intersects = raycaster.intersectObjects(controlPoints);
             // If a new control point is selected...
             if (intersects.length > 0 && selectedControlPoint !== intersects[0].object) {
-                orbitControls.enabled = false;
+                // orbitControls.enabled = false;
                 // If a control point was selected before, detach it from the transform control.
                 if (selectedControlPoint)
                     transformControls.detach();
@@ -381,7 +372,6 @@ export default function FFD() {
             transformControls.detach();
             selectedControlPoint = null;
             orbitControls.enabled = true;
-
         }
 
         // ============================================== [FFD] ==============================================
@@ -393,10 +383,46 @@ export default function FFD() {
             renderer.setSize(window.innerWidth, window.innerHeight);
             render();
         };
+
+        ctrlPointGUI
+            .add(sphereOptions, 'showCtrlPoint')
+            .onChange((e) => {
+                if (e) {
+                    generatePoints();
+                } else {
+                    removePoints();
+                }
+            })
+        meshGUI
+            .add(meshOptions, 'radius', 1, 2000, 1)
+            .onChange((value) => {
+                ffdRadius = value;
+                if(selectedControlPoint){
+                    getNearbyVertices(selectedControlPoint);
+                }
+            })
+
+        // ============================================== [EVENTS HANDLE] ==============================================
+
+        renderer.domElement.addEventListener('mousemove', onDocumentMouseMove, false);
+        renderer.domElement.addEventListener('mousedown', onDocumentMouseDown, false);
+        renderer.domElement.addEventListener('dblclick', onDocumentMouseDbClick, false);
+        transformControls.addEventListener('dragging-changed', function (event) {
+            orbitControls.enabled = !event.value;
+        });
+        transformControls.addEventListener('objectChange', function (event) {
+            transformMesh(event.target);
+        });
+        transformControls.addEventListener('mouseUp', () => {
+            removePoints();
+            generatePoints();
+        });
+
         window.addEventListener('resize', handleResize);
 
         // Keyboard controls 
         window.addEventListener('keydown', function (event) {
+            console.log(event.keyCode)
             switch (event.keyCode) {
                 case 87: // W
                     transformControls.setMode('translate')
@@ -429,6 +455,9 @@ export default function FFD() {
                     break;
                 case 32: // Spacebar
                     transformControls.enabled = !transformControls.enabled;
+                    break;
+                case 71:
+                    reverseGeometry();
                     break;
             }
         })
