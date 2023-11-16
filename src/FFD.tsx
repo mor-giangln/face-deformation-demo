@@ -207,7 +207,7 @@ export default function FFD() {
         function reverseGeometry() {
             removePoints();
             generatePoints();
-            faceMesh.geometry = initialModelGeometry;
+            faceMesh.geometry.copy(initialModelGeometry);
             faceMesh.geometry.attributes.position.needsUpdate = true;
             faceMesh.geometry.computeBoundingSphere();
             faceMesh.geometry.computeBoundingBox();
@@ -422,7 +422,6 @@ export default function FFD() {
 
         // Keyboard controls 
         window.addEventListener('keydown', function (event) {
-            console.log(event.keyCode)
             switch (event.keyCode) {
                 case 87: // W
                     transformControls.setMode('translate')
