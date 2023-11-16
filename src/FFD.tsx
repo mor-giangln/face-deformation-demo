@@ -16,7 +16,7 @@ export default function FFD() {
     const modelRef = useRef<THREE.Group | null>(null);
     let faceMesh: THREE.Mesh;
     let initialModelGeometry = new THREE.BufferGeometry();
-    let ffdRadius: number = meshOptions.radius;
+    let ffdRadius: number = meshOptions.intensity;
 
     // [Scene]
     const scene: THREE.Scene = new THREE.Scene();
@@ -157,7 +157,6 @@ export default function FFD() {
                     generatePoints(); // Generate Control Points
                 }
             });
-            // transformControls.attach(loadedModel);
             scene.add(loadedModel);
         }, undefined, (error) => {
             console.log('error', error)
@@ -198,7 +197,7 @@ export default function FFD() {
         // ============================================== [FFD] ==============================================
 
         let selectedControlPoint: any = null; // Selected control point
-        const controlPoints: THREE.Mesh[] = []; // Control points meshes
+        let controlPoints: THREE.Mesh[] = []; // Control points meshes
         const ctrlPointCoordinates: THREE.Vector3[] = []; // Control points coordinates
         let nearbyVertices: any[] = [];
         let comparePos: any = null;
@@ -218,6 +217,7 @@ export default function FFD() {
         function removePoints() {
             const controlPointsGroup: any = faceMesh.getObjectByName('controlPoints');
             faceMesh.remove(controlPointsGroup);
+            controlPoints = [];
             points = [];
         }
 
@@ -394,7 +394,7 @@ export default function FFD() {
                 }
             })
         meshGUI
-            .add(meshOptions, 'radius', 1, 2000, 1)
+            .add(meshOptions, 'intensity', 1, 2000, 1)
             .onChange((value) => {
                 ffdRadius = value;
                 if(selectedControlPoint){
